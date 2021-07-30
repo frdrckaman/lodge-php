@@ -52,6 +52,47 @@ if($user->data()->accessLevel == 1){
             </li>
 
             <li class="openable">
+                <a href="#"><span class="isw-users"></span><span class="text">Clients</span></a>
+                <ul>
+                    <li>
+                        <a href="add.php?id=6">
+                            <span class="glyphicon glyphicon-user"></span><span class="text">Add client</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="info.php?id=3">
+                            <span class="glyphicon glyphicon-registration-mark"></span><span class="text">Manage Clients</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+            <li class="openable">
+                <a href="#"><span class="isw-bookmark"></span><span class="text">Rooms</span></a>
+                <ul>
+                    <li>
+                        <a href="add.php?id=7">
+                            <span class="glyphicon glyphicon-plus-sign"></span><span class="text">Assign Room</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="info.php?id=3">
+                            <span class="glyphicon glyphicon-registration-mark"></span><span class="text">Manage Rooms</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="info.php?id=4&typ=p">
+                            <span class="glyphicon glyphicon-registration-mark"></span><span class="text">Rooms Pending Payment</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="info.php?id=4&typ=a">
+                            <span class="glyphicon glyphicon-registration-mark"></span><span class="text">Rooms Payment Report</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
+
+            <li class="openable">
                 <a href="#"><span class="isw-lock"></span><span class="text">Management</span></a>
                 <ul>
                     <li class="">
@@ -87,56 +128,41 @@ if($user->data()->accessLevel == 1){
                 <a href="#"><span class="isw-favorite"></span><span class="text">Drinks</span></a>
                 <ul>
                     <li class="">
-                        <a href="add.php?id=2">
+                        <a href="add.php?id=8">
                             <span class="glyphicon glyphicon-plus"></span><span class="text">Add Drinks</span>
                         </a>
                     </li>
                     <li class="">
-                        <a href="info.php?id=2">
-                            <span class="glyphicon glyphicon-list"></span><span class="text">View</span>
+                        <a href="add.php?id=9">
+                            <span class="glyphicon glyphicon-plus"></span><span class="text">Sell Drinks</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="info.php?id=6">
+                            <span class="glyphicon glyphicon-list"></span><span class="text">Drinks Sales Report</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="info.php?id=5">
+                            <span class="glyphicon glyphicon-list"></span><span class="text">Manage Drinks</span>
                         </a>
                     </li>
 
-                </ul>
-            </li>
-
-            <li class="openable">
-                <a href="#"><span class="isw-users"></span><span class="text">Citizen</span></a>
-                <ul>
-                    <li>
-                        <a href="add.php?id=6">
-                            <span class="glyphicon glyphicon-user"></span><span class="text">Add Citizen</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="info.php?id=3">
-                            <span class="glyphicon glyphicon-registration-mark"></span><span class="text">Manage Citizen</span>
-                        </a>
-                    </li>
                 </ul>
             </li>
 
         <li class="openable">
             <a href="#"><span class="isw-documents"></span><span class="text">Reports</span></a>
             <ul>
-<!--                <li>-->
-<!--                    <a href="#" data-toggle="modal">-->
-<!--                        <span class="glyphicon glyphicon-search"></span><span class="text">Search Report</span>-->
-<!--                    </a>-->
-<!--                </li>-->
                 <li>
-                    <a href="info.php?id=4">
-                        <span class="glyphicon glyphicon-user"></span><span class="text">Enumerator Report</span>
+                    <a href="#" data-toggle="modal">
+                        <span class="glyphicon glyphicon-search"></span><span class="text">Search Report</span>
                     </a>
                 </li>
+
                 <li>
-                    <a href="info.php?id=5">
-                        <span class="glyphicon glyphicon-share"></span><span class="text">Census Report</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="info.php?id=6">
-                        <span class="glyphicon glyphicon-share"></span><span class="text">Summary Report</span>
+                    <a href="#">
+                        <span class="glyphicon glyphicon-share"></span><span class="text">Daily Report</span>
                     </a>
                 </li>
             </ul>
@@ -146,20 +172,7 @@ if($user->data()->accessLevel == 1){
 
             </li>
         <?php }else {?>
-            <li class="active">
-                <a href="add.php?id=6">
-                    <span class="isw-users"></span><span class="text">Add Citizen Census</span>
-                </a>
-            </li>
-            <li class="active">
-                <a href="info.php?id=3">
-                    <span class="isw-list"></span><span class="text">Citizen Census Data</span>
-                </a>
-            </li>
-            <li class="openable">
-                <a href="#"><span class="isw-tag"></span><span class="text">Extra</span></a>
 
-            </li>
         <?php }?>
     </ul>
 
@@ -188,10 +201,14 @@ if($user->data()->accessLevel == 1){
 
         <div class="wBlock clearfix">
             <div class="dSpace">
-                <h3>Total Data</h3>
-                <span class="number"><?=$citizen?></span>
-                <span><?=$men?> <b>Men</b></span>
-                <span><?=$women?> <b>Women</b></span>
+                <h3>Rooms</h3>
+                <span class="number"><?=$override->getNo('rooms')?></span>
+
+            </div>
+            <div class="rSpace">
+                <span class="mChartBar" sparkType="bar" sparkBarColor="white"><!--240,234,150,290,310,240,210,400,320,198,250,222,111,240,221,340,250,190--></span>
+                <span><?=$override->getCount('rooms','status',1)?> <b>Occupied</b></span>
+                <span><?=$override->getCount('rooms','status',0)?> <b>Available</b></span>
             </div>
         </div>
 

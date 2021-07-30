@@ -108,6 +108,10 @@ if($user->isLoggedIn()) {
                                             <div class="text"><?=$override->get('position','id',$user->data()->position)[0]['name']?></div>
                                         </li>
                                         <li>
+                                            <div class="title">Created on:</div>
+                                            <div class="text"><?=$user->data()->create_on?></div>
+                                        </li>
+                                        <li>
                                             <div class="title">Last Login:</div>
                                             <div class="text"><?=$user->data()->last_login?></div>
                                         </li>

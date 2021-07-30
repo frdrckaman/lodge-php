@@ -160,7 +160,7 @@ if($user->isLoggedIn()) {
                 $pageError = $validate->errors();
             }
         }
-        elseif (Input::get('add_citizen')){
+        elseif (Input::get('add_client')){
             $validate = new validate();
             $validate = $validate->check($_POST, array(
                 'firstname' => array(
@@ -172,56 +172,245 @@ if($user->isLoggedIn()) {
                 'gender' => array(
                     'required' => true,
                 ),
-                'region' => array(
-                    'required' => true,
-                ),
-                'district' => array(
-                    'required' => true,
-                ),
-                'ward' => array(
-                    'required' => true,
-                ),
-                'household' => array(
-                    'required' => true,
-                ),
                 'nationality' => array(
                     'required' => true,
                 ),
-                'no_dependant' => array(
+                'phone_number' => array(
                     'required' => true,
+                    'unique' => 'clients'
+                ),
+                'email_address' => array(
+                    'unique' => 'clients'
                 ),
             ));
             if ($validate->passed()) {
                 try {
-                    $user->createRecord('citizen', array(
+                    $user->createRecord('clients', array(
                         'firstname' => Input::get('firstname'),
                         'lastname' => Input::get('lastname'),
-                        'tribe' => Input::get('tribe'),
                         'gender' => Input::get('gender'),
-                        'marital_status' => Input::get('marital_status'),
-                        'occupation' => Input::get('occupation'),
-                        'education' => Input::get('education'),
-                        'region_id' => Input::get('region'),
-                        'district_id' => Input::get('district'),
-                        'ward_id'=>Input::get('ward'),
-                        'nationality'=>Input::get('nationality'),
                         'address' => Input::get('address'),
-                        'household'=>Input::get('household'),
-                        'no_elder' => Input::get('no_elder'),
-                        'no_children' => Input::get('no_children'),
-                        'no_dependant' => Input::get('no_dependant'),
-                        'house_hold_income' => Input::get('house_hold_income'),
+                        'nationality'=>Input::get('nationality'),
+                        'tribe' => Input::get('tribe'),
+                        'place_of_birth' => Input::get('place_of_birth'),
+                        'occupation' => Input::get('occupation'),
+                        'passport_no' => Input::get('passport_no'),
+                        'phone_number' => Input::get('phone_number'),
+                        'email_address'=>Input::get('email_address'),
+                        'create_on'=>date('Y-m-d'),
                         'status' => 1,
-                        'collect_date' => date('Y-m-d'),
-                        'user_id'=>$user->data()->id,
+                        'staff_id'=>$user->data()->id,
                     ));
-                    $successMessage = 'Record Created Successful';
+                    $successMessage = 'Client Created Successful';
 
                 } catch (Exception $e) {
                     die($e->getMessage());
                 }
             } else {
                 $pageError = $validate->errors();
+            }
+        }
+        elseif (Input::get('assign_room')){
+            $validate = new validate();
+            $validate = $validate->check($_POST, array(
+                'client' => array(
+                    'required' => true,
+                ),
+                'room' => array(
+                    'required' => true,
+                ),
+                'arrival_date' => array(
+                    'required' => true,
+                ),
+                'departure_date' => array(
+                    'required' => true,
+                ),
+            ));
+            if ($validate->passed()) {$amount=0;
+                $price = $override->get('rooms','id',Input::get('room'))[0];
+                $noDays = $user->dateDiff(Input::get('departure_date'),Input::get('arrival_date'));
+                $assignR=$override->get('room_assigned','room_id',Input::get('room'))[0];
+                if($assignR){$rm_st=true;$rm_v=$assignR['status'];}else{$rm_st=false;$rm_v=0;}
+                $amount = $noDays * $price['price'];
+                if(Input::get('payment') <= $amount){
+                    if($rm_v == 0){
+                        try {
+                            if($assignR['room_id'] == Input::get('room')){
+                                $user->updateRecord('room_assigned', array(
+                                    'arrival_date' => Input::get('arrival_date'),
+                                    'departure_date' => Input::get('departure_date'),
+                                    'room_id' => Input::get('room'),
+                                    'client_id' => Input::get('client'),
+                                    'create_on'=>date('Y-m-d'),
+                                    'status' => 1,
+                                    'staff_id'=>$user->data()->id,
+                                ),$assignR['id']);
+
+                            }else{
+                                $user->createRecord('room_assigned', array(
+                                    'arrival_date' => Input::get('arrival_date'),
+                                    'departure_date' => Input::get('departure_date'),
+                                    'room_id' => Input::get('room'),
+                                    'client_id' => Input::get('client'),
+                                    'create_on'=>date('Y-m-d'),
+                                    'status' => 1,
+                                    'staff_id'=>$user->data()->id,
+                                ));
+                            }
+                            $user->createRecord('room_assigned_rec', array(
+                                'arrival_date' => Input::get('arrival_date'),
+                                'departure_date' => Input::get('departure_date'),
+                                'room_id' => Input::get('room'),
+                                'client_id' => Input::get('client'),
+                                'create_on'=>date('Y-m-d'),
+                                'staff_id'=>$user->data()->id,
+                            ));
+                            if($amount == Input::get('payment')){$status=1;}else{$status=0;}
+                            $user->createRecord('payment', array(
+                                'amount' => $amount,
+                                'payed' => Input::get('payment'),
+                                'room_id' => Input::get('room'),
+                                'no_days' => $noDays,
+                                'client_id' => Input::get('client'),
+                                'create_on'=>date('Y-m-d'),
+                                'status' => $status,
+                                'staff_id'=>$user->data()->id,
+                            ));
+                            if(Input::get('payment') > 0){
+                                $user->createRecord('payment_rec', array(
+                                    'amount' => Input::get('payment'),
+                                    'no_days' => $noDays,
+                                    'room_id' => Input::get('room'),
+                                    'client_id' => Input::get('client'),
+                                    'create_on'=>date('Y-m-d'),
+                                    'staff_id'=>$user->data()->id,
+                                ));
+                            }
+                            $user->updateRecord('rooms',array('status'=>1),Input::get('room'));
+                            $successMessage = 'Room assigned to the Client Successful';
+
+                        } catch (Exception $e) {
+                            die($e->getMessage());
+                        }
+                    }else{
+                        $errorMessage='Room is occupied, if not so please update room status to unoccupied then try again';
+                    }
+                }else{
+                    $errorMessage='Paid Amount exceeded the required amount';
+                }
+            } else {
+                $pageError = $validate->errors();
+            }
+        }
+        elseif (Input::get('add_drink')) {
+            $validate = $validate->check($_POST, array(
+                'drink_category' => array(
+                    'required' => true,
+                ),
+                'drink_brand' => array(
+                    'required' => true,
+                ),
+                'quantity' => array(
+                    'required' => true,
+                ),
+                'price_per_item' => array(
+                    'required' => true,
+                ),
+            ));
+            if ($validate->passed()) {
+                $drinks=$override->getNews('drinks','cat_id',Input::get('drink_category'),'brand_id',Input::get('drink_brand'));
+                if($drinks){
+                    $quantity=$drinks[0]['quantity']+Input::get('quantity');
+                    try {
+                        $user->updateRecord('drinks', array(
+                            'quantity' => $quantity,
+                            'price_per_item' => Input::get('price_per_item'),
+                            'status' => 1,
+                            'staff_id' => $user->data()->id,
+                        ),$drinks[0]['id']);
+                        $user->createRecord('drinks_rec', array(
+                            'quantity' => Input::get('quantity'),
+                            'price_per_item' => Input::get('price_per_item'),
+                            'cat_id' => Input::get('drink_category'),
+                            'brand_id' => Input::get('drink_brand'),
+                            'create_on' => date('Y-m-d'),
+                            'staff_id' => $user->data()->id,
+                        ));
+                        $successMessage = 'Drinks Added to the stock Successful';
+                    } catch (Exception $e) {
+                        die($e->getMessage());
+                    }
+                }else{
+                    try {
+                        $user->createRecord('drinks', array(
+                            'quantity' => Input::get('quantity'),
+                            'price_per_item' => Input::get('price_per_item'),
+                            'cat_id' => Input::get('drink_category'),
+                            'brand_id' => Input::get('drink_brand'),
+                            'status' => 1,
+                            'staff_id' => $user->data()->id,
+                        ));
+                        $user->createRecord('drinks_rec', array(
+                            'quantity' => Input::get('quantity'),
+                            'price_per_item' => Input::get('price_per_item'),
+                            'cat_id' => Input::get('drink_category'),
+                            'brand_id' => Input::get('drink_brand'),
+                            'create_on' => date('Y-m-d'),
+                            'staff_id' => $user->data()->id,
+                        ));
+                        $successMessage = 'Drinks Added to the stock Successful';
+                    } catch (Exception $e) {
+                        die($e->getMessage());
+                    }
+                }
+            } else {
+                $pageError = $validate->errors();
+            }
+        }
+        elseif (Input::get('sell_drink')) {
+            if(Input::get('complete_sell')){
+                $validate = $validate->check($_POST, array(
+                    'amount' => array(
+                        'required' => true,
+                    ),
+                ));
+                if ($validate->passed()) {
+                    if(Input::get('amount') == Input::get('total_cost')){
+                        try {
+                            $user->createRecord('drink_sales', array(
+                                'amount' => Input::get('amount'),
+                                'create_on' => date('Y-m-d'),
+                                'staff_id' => $user->data()->id,
+                            ));
+                            $sale_id=$override->lastRow('drink_sales','id')[0];
+                            $si=0;
+                            foreach (Input::get('s_id') as $sid){
+                                $q=Input::get('qt')[$si];
+                            $user->createRecord('drink_sale_item', array(
+                                'amount' => Input::get('prc')[$si],
+                                'quantity' => $q,
+                                'drinks_id' => $sid,
+                                'sale_id' => $sale_id['id'],
+                                'create_on' => date('Y-m-d'),
+                                'staff_id' => $user->data()->id,
+                            ));
+                            $dr_stock = $override->get('drinks','id',$sid)[0];
+                            $new_stock=$dr_stock['quantity']-$q;
+                            $user->updateRecord('drinks',array(
+                                    'quantity' => $new_stock,
+                            ),$dr_stock['id']);
+                                $si++;
+                            }
+                            $successMessage = 'Drinks Sold Successful';
+                        } catch (Exception $e) {
+                            die($e->getMessage());
+                        }
+                    }else{
+                        $errorMessage='Amount entered is either insufficient  or exceeded the required amount, Please enter the correct amount';
+                    }
+                } else {
+                    $pageError = $validate->errors();
+                }
             }
         }
     }
@@ -441,7 +630,7 @@ if($user->isLoggedIn()) {
                     <div class="col-md-offset-1 col-md-8">
                         <div class="head clearfix">
                             <div class="isw-ok"></div>
-                            <h1>Add Citizen</h1>
+                            <h1>Add Clients</h1>
                         </div>
                         <div class="block-fluid">
                             <form id="validation" method="post" >
@@ -459,12 +648,6 @@ if($user->isLoggedIn()) {
                                     </div>
                                 </div>
                                 <div class="row-form clearfix">
-                                    <div class="col-md-3">Tribe:</div>
-                                    <div class="col-md-9">
-                                        <input value="" class="validate[required]" type="text" name="tribe" id="tribe"/>
-                                    </div>
-                                </div>
-                                <div class="row-form clearfix">
                                     <div class="col-md-3">Gender</div>
                                     <div class="col-md-9">
                                         <select name="gender" style="width: 100%;" required>
@@ -475,39 +658,31 @@ if($user->isLoggedIn()) {
                                     </div>
                                 </div>
                                 <div class="row-form clearfix">
-                                    <div class="col-md-3">Education</div>
+                                    <div class="col-md-3">Tribe:</div>
                                     <div class="col-md-9">
-                                        <select name="education" style="width: 100%;" required>
-                                            <option value="">Select Education</option>
-                                            <option value="PHD">PHD</option>
-                                            <option value="Master Degree">Master Degree</option>
-                                            <option value="Bachelor Degree">Bachelor Degree</option>
-                                            <option value="Advance Diploma">Advance Diploma</option>
-                                            <option value="Diploma">Diploma</option>
-                                            <option value="Certificate">Certificate</option>
-                                            <option value="A Level">A Level</option>
-                                            <option value="O Level">O Level</option>
-                                            <option value="Primary Education">Primary Education</option>
-                                            <option value="Didnt go to school">Didnt go to school</option>
-                                            <option value="Not Applicable">Not Applicable</option>
-                                        </select>
+                                        <input value="" class="validate[required]" type="text" name="tribe" id="tribe"/>
                                     </div>
                                 </div>
                                 <div class="row-form clearfix">
-                                    <div class="col-md-3">Marital Status</div>
+                                    <div class="col-md-3">Place of Birth:</div>
                                     <div class="col-md-9">
-                                        <select name="marital_status" style="width: 100%;" required>
-                                            <option value="">Select Marital Status</option>
-                                            <option value="Married">Married</option>
-                                            <option value="Living together as married">Living together as married</option>
-                                            <option value="Not Married">Not Married</option>
-                                            <option value="Divorced">Divorced</option>
-                                            <option value="Separated">Separated</option>
-                                            <option value="Widow">Widow</option>
-                                            <option value="Not Applicable">Not Applicable</option>
-                                        </select>
+                                        <input value="" class="validate[required]" type="text" name="place_of_birth" id="birth_place"/>
                                     </div>
                                 </div>
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Nationality:</div>
+                                    <div class="col-md-9">
+                                        <input value="" class="validate[required]" type="text" name="nationality" />
+                                    </div>
+                                </div>
+
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Address:</div>
+                                    <div class="col-md-9">
+                                        <input value="" class="validate[required]" type="text" name="address" />
+                                    </div>
+                                </div>
+
                                 <div class="row-form clearfix">
                                     <div class="col-md-3">Occupation</div>
                                     <div class="col-md-9">
@@ -528,81 +703,200 @@ if($user->isLoggedIn()) {
                                 </div>
 
                                 <div class="row-form clearfix">
-                                    <div class="col-md-3">Region</div>
+                                    <div class="col-md-3">Passport Number:</div>
                                     <div class="col-md-9">
-                                        <select name="region" id="region" style="width: 100%;" required>
-                                            <option value="">Select region</option>
-                                            <?php foreach ($override->getData('region') as $position){?>
-                                                <option value="<?=$position['id']?>"><?=$position['name']?></option>
+                                        <input value="" class="" type="text" name="passport_no" />
+                                    </div>
+                                </div>
+
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Phone Number:</div>
+                                    <div class="col-md-9">
+                                        <input value="" class="validate[required]" type="text" name="phone_number" />
+                                    </div>
+                                </div>
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Email Address:</div>
+                                    <div class="col-md-9">
+                                        <input value="" class="validate[custom[email]]" type="email" name="email_address" />
+                                    </div>
+                                </div>
+
+                                <div class="footer tar">
+                                    <input type="submit" name="add_client" value="Submit" class="btn btn-default">
+                                </div>
+
+                            </form>
+                        </div>
+
+                    </div>
+                <?php }elseif ($_GET['id'] == 7){?>
+                    <div class="col-md-offset-1 col-md-8">
+                        <div class="head clearfix">
+                            <div class="isw-ok"></div>
+                            <h1>Assign Room</h1>
+                        </div>
+                        <div class="block-fluid">
+                            <form id="validation" method="post" >
+
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Client:</div>
+                                    <div class="col-md-9">
+                                        <select name="client" id="s2_1" style="width: 100%;">
+                                            <option value="">choose a client...</option>
+                                            <?php foreach ($override->getData('clients') as $client){?>
+                                                <option value="<?=$client['id']?>"><?=$client['firstname'].' '.$client['lastname'].' ( '.$client['phone_number'].' ) '?></option>
+                                            <?php }?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Room:</div>
+                                    <div class="col-md-9">
+                                        <select name="room" id="" style="width: 100%;">
+                                            <option value="">Choose a Room...</option>
+                                            <?php foreach ($override->get('rooms','status',0) as $room){?>
+                                                <option value="<?=$room['id']?>"><?=$room['name']?></option>
+                                            <?php }?>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Arrival Date:</div>
+                                    <div class="col-md-9"><input value="" class="validate[required,custom[date]]" type="text" name="arrival_date" id="date"/> <span>Example: 2010-12-01</span></div>
+                                </div>
+
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Departure Date:</div>
+                                    <div class="col-md-9"><input value="" class="validate[required,custom[date]]" type="text" name="departure_date" id="date"/> <span>Example: 2010-12-01</span></div>
+                                </div>
+
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Payment:</div>
+                                    <div class="col-md-9">
+                                        <input value="0" class="" type="number" name="payment" id="payment"/>
+                                    </div>
+                                </div>
+
+                                <div class="footer tar">
+                                    <input type="submit" name="assign_room" value="Submit" class="btn btn-default">
+                                </div>
+
+                            </form>
+                        </div>
+
+                    </div>
+                <?php }elseif ($_GET['id'] == 8){?>
+                    <div class="col-md-offset-1 col-md-8">
+                        <div class="head clearfix">
+                            <div class="isw-ok"></div>
+                            <h1>Add Drinks</h1>
+                        </div>
+                        <div class="block-fluid">
+                            <form id="validation" method="post" >
+
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Drink Category:</div>
+                                    <div class="col-md-9">
+                                        <select name="drink_category" id="s2_1" style="width: 100%;">
+                                            <option value="">Choose Category...</option>
+                                            <?php foreach ($override->getData('drink_cat') as $category){?>
+                                                <option value="<?=$category['id']?>"><?=$category['name']?></option>
                                             <?php }?>
                                         </select>
                                     </div>
                                 </div>
                                 <div class="row-form clearfix">
                                     <span><img src="img/loaders/loader.gif" id="wait_ds" title="loader.gif"/></span>
-                                    <div class="col-md-3">District</div>
+                                    <div class="col-md-3">Drink Brand:</div>
                                     <div class="col-md-9">
-                                        <select name="district" id="ds_data" style="width: 100%;" required>
-                                            <option value="">Select district</option>
+                                        <select name="drink_brand" id="s2_2" style="width: 100%;">
+                                            <option value="">choose brand...</option>
                                         </select>
                                     </div>
                                 </div>
+
                                 <div class="row-form clearfix">
-                                    <span><img src="img/loaders/loader.gif" id="wait_wd" title="loader.gif"/></span>
-                                    <div class="col-md-3">Ward</div>
-                                    <div class="col-md-9">
-                                        <select name="ward" id="wd_data" style="width: 100%;" required>
-                                            <option value="">Select ward</option>
-                                        </select>
-                                    </div>
+                                    <div class="col-md-3">Quantity:</div>
+                                    <div class="col-md-9"><input value="" class="validate[required]" type="number" name="quantity" id="quantity"/> <span>Note: Count individual items</span></div>
                                 </div>
+
                                 <div class="row-form clearfix">
-                                    <div class="col-md-3">Address:</div>
-                                    <div class="col-md-9">
-                                        <input value="" class="validate[required]" type="text" name="address" />
-                                    </div>
-                                </div>
-                                <div class="row-form clearfix">
-                                    <div class="col-md-3">Nationality:</div>
-                                    <div class="col-md-9">
-                                        <input value="" class="validate[required]" type="text" name="nationality" />
-                                    </div>
-                                </div>
-                                <div class="row-form clearfix">
-                                    <div class="col-md-3">Household:</div>
-                                    <div class="col-md-9">
-                                        <input value="" class="validate[required]" type="number" name="household" />
-                                    </div>
-                                </div>
-                                <div class="row-form clearfix">
-                                    <div class="col-md-3">No of Elder:</div>
-                                    <div class="col-md-9">
-                                        <input value="" class="validate[required]" type="number" name="no_elder" />
-                                    </div>
-                                </div>
-                                <div class="row-form clearfix">
-                                    <div class="col-md-3">No of Children:</div>
-                                    <div class="col-md-9">
-                                        <input value="" class="validate[required]" type="number" name="no_children" />
-                                    </div>
-                                </div>
-                                <div class="row-form clearfix">
-                                    <div class="col-md-3">No of Dependant:</div>
-                                    <div class="col-md-9">
-                                        <input value="" class="validate[required]" type="number" name="no_dependant" />
-                                    </div>
-                                </div>
-                                <div class="row-form clearfix">
-                                    <div class="col-md-3">Household Income:</div>
-                                    <div class="col-md-9">
-                                        <input value="" class="validate[required]" type="number" name="house_hold_income" />
-                                    </div>
+                                    <div class="col-md-3">Price per Item:</div>
+                                    <div class="col-md-9"><input value="" class="validate[required]" type="number" name="price_per_item" id="cost"/> <span>Note: Cost of single item</span></div>
                                 </div>
 
                                 <div class="footer tar">
-                                    <input type="submit" name="add_citizen" value="Submit" class="btn btn-default">
+                                    <input type="submit" name="add_drink" value="Submit" class="btn btn-default">
                                 </div>
 
+                            </form>
+                        </div>
+
+                    </div>
+                <?php }elseif ($_GET['id'] == 9){?>
+                    <div class="col-md-offset-1 col-md-8">
+                        <div class="head clearfix">
+                            <div class="isw-ok"></div>
+                            <h1>Sell Drinks</h1>
+                        </div>
+                        <div class="block-fluid">
+                            <h5>&nbsp;</h5>
+                            <form id="validation" method="post" >
+                                <?php if(!Input::get('drink') && !Input::get('drink_1')){?>
+                                    <div class="row-form clearfix">
+                                        <div class="col-md-3">Select Drinks:</div>
+                                        <div class="col-md-9">
+                                            <select name="drink[]" id="s2_2" style="width: 100%;" multiple="multiple" required>
+                                                <option value="">Choose Drink...</option>
+                                                <?php foreach ($override->get('drinks','status', 1) as $drinks){
+                                                    $brand=$override->get('drink_brand','id',$drinks['brand_id'])[0];?>
+                                                    <option value="<?=$drinks['id']?>"><?=$brand['name']?></option>
+                                                <?php }?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="footer tar">
+                                        <input type="submit" name="sell_drink" value="Submit" class="btn btn-default">
+                                    </div>
+                                <?php }?>
+                                <?php if (Input::get('drink')){$f=0;
+                                    foreach (Input::get('drink') as $drk){
+                                        $dnk=$override->get('drinks','id',$drk)[0];
+                                        $brnd=$override->get('drink_brand','id',$dnk['brand_id'])[0];?>
+                                        <div class="row-form clearfix">
+                                            <div class="col-md-2"><strong><?=$brnd['name']?> : </strong></div>
+                                            <input type="hidden" name="drink_1[<?=$f?>]" value="<?=$drk?>">
+                                            <div class="col-md-3"><input value="" class="validate[required]" type="number" name="quantity[]" id="quantity"/> </div>
+                                        </div>
+                                <?php $f++;}?>
+                                    <div class="footer tar">
+                                        <input type="submit" name="sell_drink" value="Submit" class="btn btn-default">
+                                    </div>
+                                <?php }if(Input::get('quantity')){$x=0;$total=0;
+                                    foreach (Input::get('quantity') as $qty){
+                                        $dnk=$override->get('drinks','id',Input::get('drink_1')[$x])[0];
+                                        $brnd=$override->get('drink_brand','id',$dnk['brand_id'])[0];
+                                        $total += $dnk['price_per_item']*$qty?>
+                                        <div class="col-md-12"><?=$brnd['name']?> : <?=$qty?> => <?=number_format($dnk['price_per_item']*$qty)?> Tsh</div>
+                                        <input type="hidden" name="prc[<?=$x?>]" value="<?=$dnk['price_per_item']*$qty?>">
+                                        <input type="hidden" name="s_id[<?=$x?>]" value="<?=$dnk['id']?>">
+                                        <input type="hidden" name="qt[<?=$x?>]" value="<?=$qty?>">
+                                        <div class="dr"><span></span></div>
+                                        <?php $x++;}?>
+                                    <div class="col-md-12"><strong> Total Cost : <?=number_format($total)?> Tsh</strong></div>
+                                    <div class="dr"><span></span></div>
+                                    <div class="row-form clearfix">
+                                        <div class="col-md-3">Amount:</div>
+                                        <div class="col-md-9"><input value="" class="validate[required]" type="number" name="amount" id="amount" required/></div>
+                                    </div>
+                                    <div class="footer tar">
+                                        <input type="hidden" name="complete_sell" value="1">
+                                        <input type="hidden" name="total_cost" value="<?=$total?>">
+                                        <input type="submit" name="sell_drink" value="Submit" class="btn btn-default">
+                                    </div>
+                                 <?php }?>
                             </form>
                         </div>
 
@@ -628,45 +922,16 @@ if($user->isLoggedIn()) {
     }
     $(document).ready(function(){
         $('#wait_ds').hide();
-        $('#region').change(function(){
+        $('#s2_1').change(function(){
             var getUid = $(this).val();
             $('#wait_ds').show();
             $.ajax({
-                url:"process.php?cnt=region",
+                url:"process.php?cnt=cat",
                 method:"GET",
                 data:{getUid:getUid},
                 success:function(data){
-                    $('#ds_data').html(data);
+                    $('#s2_2').html(data);
                     $('#wait_ds').hide();
-                }
-            });
-
-        });
-        $('#wait_wd').hide();
-        $('#ds_data').change(function(){
-            $('#wait_wd').hide();
-            var getUid = $(this).val();
-            $.ajax({
-                url:"process.php?cnt=district",
-                method:"GET",
-                data:{getUid:getUid},
-                success:function(data){
-                    $('#wd_data').html(data);
-                    $('#wait_wd').hide();
-                }
-            });
-
-        });
-        $('#a_cc').change(function(){
-            var getUid = $(this).val();
-            $('#wait').show();
-            $.ajax({
-                url:"process.php?cnt=payAc",
-                method:"GET",
-                data:{getUid:getUid},
-                success:function(data){
-                    $('#cus_acc').html(data);
-                    $('#wait').hide();
                 }
             });
 

@@ -164,7 +164,7 @@ if($user->isLoggedIn()) {
             ),Input::get('id'));
             $successMessage = 'User Deleted Successful';
         }
-        elseif (Input::get('edit_citizen')){
+        elseif (Input::get('edit_client')){
             $validate = $validate->check($_POST, array(
                 'firstname' => array(
                     'required' => true,
@@ -175,46 +175,27 @@ if($user->isLoggedIn()) {
                 'gender' => array(
                     'required' => true,
                 ),
-                'region' => array(
-                    'required' => true,
-                ),
-                'district' => array(
-                    'required' => true,
-                ),
-                'ward' => array(
-                    'required' => true,
-                ),
-                'household' => array(
-                    'required' => true,
-                ),
                 'nationality' => array(
                     'required' => true,
                 ),
-                'no_dependant' => array(
+                'phone_number' => array(
                     'required' => true,
                 ),
             ));
             if ($validate->passed()) {
                 try {
-                    $user->updateRecord('citizen', array(
+                    $user->updateRecord('clients', array(
                         'firstname' => Input::get('firstname'),
                         'lastname' => Input::get('lastname'),
-                        'tribe' => Input::get('tribe'),
                         'gender' => Input::get('gender'),
-                        'marital_status' => Input::get('marital_status'),
-                        'occupation' => Input::get('occupation'),
-                        'education' => Input::get('education'),
-                        'region_id' => Input::get('region'),
-                        'district_id' => Input::get('district'),
-                        'ward_id'=>Input::get('ward'),
-                        'nationality'=>Input::get('nationality'),
                         'address' => Input::get('address'),
-                        'household'=>Input::get('household'),
-                        'no_elder' => Input::get('no_elder'),
-                        'no_children' => Input::get('no_children'),
-                        'no_dependant' => Input::get('no_dependant'),
-                        'house_hold_income' => Input::get('house_hold_income'),
-                        'user_id'=>$user->data()->id,
+                        'nationality'=>Input::get('nationality'),
+                        'tribe' => Input::get('tribe'),
+                        'place_of_birth' => Input::get('place_of_birth'),
+                        'occupation' => Input::get('occupation'),
+                        'passport_no' => Input::get('passport_no'),
+                        'phone_number' => Input::get('phone_number'),
+                        'email_address'=>Input::get('email_address'),
                     ),Input::get('id'));
                     $successMessage = 'Record Updated Successful';
 
@@ -225,17 +206,77 @@ if($user->isLoggedIn()) {
                 $pageError = $validate->errors();
             }
         }
-        elseif (Input::get('delete_citizen')){
-            $user->deleteRecord('citizen','id',Input::get('id'));
+        elseif (Input::get('delete_client')){
+            $user->deleteRecord('client','id',Input::get('id'));
             $successMessage = 'Record Deleted Successful';
+        }
+        elseif (Input::get('p_payment')){
+            $validate = $validate->check($_POST, array(
+                'amount' => array(
+                    'required' => true,
+                ),
+            ));
+            if ($validate->passed()) {
+                $r_amount=Input::get('amount_p')+Input::get('amount');
+                if($r_amount <= Input::get('amount_r')){
+                    if($r_amount == Input::get('amount_r')){$st=1;}else{$st=0;}
+                    try {
+                        $user->updateRecord('payment', array(
+                            'payed' => $r_amount,
+                            'status' => $st,
+                        ),Input::get('id'));
+                        $user->createRecord('payment_rec', array(
+                            'amount' => Input::get('amount'),
+                            'no_days' => Input::get('no_days'),
+                            'room_id' => Input::get('room_id'),
+                            'client_id' => Input::get('client_id'),
+                            'create_on'=>date('Y-m-d'),
+                            'staff_id'=>$user->data()->id,
+                        ));
+                        $successMessage = 'Payment Successful Updated';
+
+                    } catch (Exception $e) {
+                        die($e->getMessage());
+                    }
+                }else{$errorMessage='Paid Amount exceeded the required amount';}
+            } else {
+                $pageError = $validate->errors();
+            }
+        }
+        elseif (Input::get('edit_drinks')){
+            $validate = $validate->check($_POST, array(
+                'drink_category' => array(
+                    'required' => true,
+                ),
+                'drink_brand' => array(
+                    'required' => true,
+                ),
+                'price_per_item' => array(
+                    'required' => true,
+                ),
+            ));
+            if ($validate->passed()) {
+                try {
+                    $user->updateRecord('drinks', array(
+                        'price_per_item' => Input::get('price_per_item'),
+                        'cat_id' => Input::get('drink_category'),
+                        'brand_id' => Input::get('drink_brand'),
+                        'staff_id' => $user->data()->id,
+                    ),Input::get('id'));
+                    $successMessage = 'Drinks Successful Updated';
+
+                } catch (Exception $e) {
+                    die($e->getMessage());
+                }
+            } else {
+                $pageError = $validate->errors();
+            }
         }
         elseif (Input::get('download')){
-            $user->exportData($override->getData('citizen'), 'citizen_data');
-            $successMessage = 'Record Deleted Successful';
+
         }
         elseif (Input::get('download_e')){
-            $user->exportData($override->getData('citizen'), 'citizen_data');
-            $successMessage = 'Record Deleted Successful';
+
         }
     }
 }else{
@@ -712,7 +753,7 @@ if($user->isLoggedIn()) {
                     <div class="col-md-12">
                         <div class="head clearfix">
                             <div class="isw-grid"></div>
-                            <h1>List of Citizen</h1>
+                            <h1>List of Clients</h1>
                             <ul class="buttons">
                                 <li><a href="#" class="isw-download"></a></li>
                                 <li><a href="#" class="isw-attachment"></a></li>
@@ -735,44 +776,35 @@ if($user->isLoggedIn()) {
                                     <th width="10%">Gender</th>
                                     <th width="15%">Tribe</th>
                                     <th width="10%">Nationality</th>
-                                    <th width="15%">Education</th>
                                     <th width="15%">Occupation</th>
                                     <th width="30%">Action</th>
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <?php if($user->data()->accessLevel == 1){$citizens = $override->get('citizen','status', 1);
-                                }else{
-                                    $citizens = $override->getNews('citizen','status', 1,'user_id', $user->data()->id);
-                                }
-                                foreach ($citizens as $citizen){
-                                    $region=$override->get('region','id', $citizen['region_id'])[0];
-                                    $district=$override->get('district','id', $citizen['district_id'])[0];
-                                    $ward=$override->get('ward','id', $citizen['ward_id'])[0]?>
+                                <?php foreach ($override->get('clients','status', 1) as $client){?>
                                     <tr>
                                         <td><input type="checkbox" name="checkbox"/></td>
-                                        <td> <?=$citizen['firstname'].' '.$citizen['lastname']?></td>
-                                        <td><?=$citizen['gender']?></td>
-                                        <td><?=$citizen['tribe']?></td>
-                                        <td><?=$citizen['nationality']?></td>
-                                        <td><?=$citizen['education']?></td>
-                                        <td><?=$citizen['occupation']?></td>
+                                        <td> <?=$client['firstname'].' '.$client['lastname']?></td>
+                                        <td><?=$client['gender']?></td>
+                                        <td><?=$client['tribe']?></td>
+                                        <td><?=$client['nationality']?></td>
+                                        <td><?=$client['occupation']?></td>
                                         <td>
-                                            <a href="#viewCitizen<?=$citizen['id']?>" role="button" class="btn btn-success" data-toggle="modal">Details</a>
+                                            <a href="#viewClient<?=$client['id']?>" role="button" class="btn btn-success" data-toggle="modal">Details</a>
                                             <?php if($user->data()->accessLevel == 1){?>
-                                                <a href="#editCitizen<?=$citizen['id']?>" role="button" class="btn btn-info" data-toggle="modal">Edit</a>
-                                                <a href="#deleteCitizen<?=$citizen['id']?>" role="button" class="btn btn-danger" data-toggle="modal">Delete</a>
+                                                <a href="#editClient<?=$client['id']?>" role="button" class="btn btn-info" data-toggle="modal">Edit</a>
+                                                <a href="#deleteClient<?=$client['id']?>" role="button" class="btn btn-danger" data-toggle="modal">Delete</a>
                                             <?php }?>
                                         </td>
 
                                     </tr>
-                                    <div class="modal fade" id="viewCitizen<?=$citizen['id']?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                                    <div class="modal fade" id="viewClient<?=$client['id']?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
                                         <div class="modal-dialog">
                                             <form method="post">
                                                 <div class="modal-content">
                                                     <div class="modal-header">
                                                         <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                                                        <h4>View Citizen Info</h4>
+                                                        <h4>View Client Info</h4>
                                                     </div>
                                                     <div class="modal-body modal-body-np">
                                                         <div class="row">
@@ -780,70 +812,54 @@ if($user->isLoggedIn()) {
                                                                 <div class="row-form clearfix">
                                                                     <div class="col-md-3">First Name:</div>
                                                                     <div class="col-md-9">
-                                                                        <input value="<?=$citizen['firstname']?>" class="validate[required]" type="text" name="firstname" id="firstname" readonly/>
+                                                                        <input value="<?=$client['firstname']?>" class="validate[required]" type="text" name="firstname" id="firstname" readonly/>
                                                                     </div>
                                                                 </div>
                                                                 <div class="row-form clearfix">
                                                                     <div class="col-md-3">Last Name:</div>
                                                                     <div class="col-md-9">
-                                                                        <input value="<?=$citizen['lastname']?>" class="validate[required]" type="text" name="lastname" id="lastname" readonly/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Tribe:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['tribe']?>" class="validate[required]" type="text" name="tribe" id="tribe" readonly/>
+                                                                        <input value="<?=$client['lastname']?>" class="validate[required]" type="text" name="lastname" id="lastname" readonly/>
                                                                     </div>
                                                                 </div>
                                                                 <div class="row-form clearfix">
                                                                     <div class="col-md-3">Gender</div>
                                                                     <div class="col-md-9">
                                                                         <select name="gender" style="width: 100%;" readonly>
-                                                                            <option value="<?=$citizen['gender']?>"><?=$citizen['gender']?></option>
+                                                                            <option value="<?=$client['gender']?>"><?=$client['gender']?></option>
                                                                             <option value="Male">Male</option>
                                                                             <option value="Female">Female</option>
                                                                         </select>
                                                                     </div>
                                                                 </div>
                                                                 <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Education</div>
+                                                                    <div class="col-md-3">Tribe:</div>
                                                                     <div class="col-md-9">
-                                                                        <select name="education" style="width: 100%;" readonly>
-                                                                            <option value="<?=$citizen['education']?>"><?=$citizen['education']?></option>
-                                                                            <option value="PHD">PHD</option>
-                                                                            <option value="Master Degree">Master Degree</option>
-                                                                            <option value="Bachelor Degree">Bachelor Degree</option>
-                                                                            <option value="Advance Diploma">Advance Diploma</option>
-                                                                            <option value="Diploma">Diploma</option>
-                                                                            <option value="Certificate">Certificate</option>
-                                                                            <option value="A Level">A Level</option>
-                                                                            <option value="O Level">O Level</option>
-                                                                            <option value="Primary Education">Primary Education</option>
-                                                                            <option value="Didnt go to school">Didnt go to school</option>
-                                                                            <option value="Not Applicable">Not Applicable</option>
-                                                                        </select>
+                                                                        <input value="<?=$client['tribe']?>" class="validate[required]" type="text" name="tribe" id="tribe" readonly/>
                                                                     </div>
                                                                 </div>
                                                                 <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Marital Status</div>
+                                                                    <div class="col-md-3">Place of Birth:</div>
                                                                     <div class="col-md-9">
-                                                                        <select name="marital_status" style="width: 100%;" readonly>
-                                                                            <option value="<?=$citizen['marital_status']?>"><?=$citizen['marital_status']?></option>
-                                                                            <option value="Married">Married</option>
-                                                                            <option value="Living together as married">Living together as married</option>
-                                                                            <option value="Not Married">Not Married</option>
-                                                                            <option value="Divorced">Divorced</option>
-                                                                            <option value="Separated">Separated</option>
-                                                                            <option value="Widow">Widow</option>
-                                                                            <option value="Not Applicable">Not Applicable</option>
-                                                                        </select>
+                                                                        <input value="<?=$client['place_of_birth']?>" class="validate[required]" type="text" name="place_of_birth" id="birth_place"/>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row-form clearfix">
+                                                                    <div class="col-md-3">Nationality:</div>
+                                                                    <div class="col-md-9">
+                                                                        <input value="<?=$client['nationality']?>" class="validate[required]" type="text" name="nationality" readonly/>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row-form clearfix">
+                                                                    <div class="col-md-3">Address:</div>
+                                                                    <div class="col-md-9">
+                                                                        <input value="<?=$client['address']?>" class="validate[required]" type="text" name="address" readonly/>
                                                                     </div>
                                                                 </div>
                                                                 <div class="row-form clearfix">
                                                                     <div class="col-md-3">Occupation</div>
                                                                     <div class="col-md-9">
                                                                         <select name="occupation" style="width: 100%;" readonly>
-                                                                            <option value="<?=$citizen['occupation']?>"><?=$citizen['occupation']?></option>
+                                                                            <option value="<?=$client['occupation']?>"><?=$client['occupation']?></option>
                                                                             <option value="Farmer">Farmer</option>
                                                                             <option value="Fisherman">Fisherman</option>
                                                                             <option value="Employed">Employed</option>
@@ -857,74 +873,23 @@ if($user->isLoggedIn()) {
                                                                         </select>
                                                                     </div>
                                                                 </div>
+                                                                <div class="row-form clearfix">
+                                                                    <div class="col-md-3">Passport Number:</div>
+                                                                    <div class="col-md-9">
+                                                                        <input value="<?=$client['passport_no']?>" class="" type="text" name="passport_no" readonly/>
+                                                                    </div>
+                                                                </div>
 
                                                                 <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Region</div>
+                                                                    <div class="col-md-3">Phone Number:</div>
                                                                     <div class="col-md-9">
-                                                                        <select name="region"  style="width: 100%;" readonly>
-                                                                            <option value="<?=$region['id']?>"><?=$region['name']?></option>
-                                                                            <?php foreach ($override->getData('region') as $position){?>
-                                                                                <option value="<?=$position['id']?>"><?=$position['name']?></option>
-                                                                            <?php }?>
-                                                                        </select>
+                                                                        <input value="<?=$client['phone_number']?>" class="validate[required]" type="text" name="phone_number" readonly/>
                                                                     </div>
                                                                 </div>
                                                                 <div class="row-form clearfix">
-                                                                    <div class="col-md-3">District</div>
+                                                                    <div class="col-md-3">Email Address:</div>
                                                                     <div class="col-md-9">
-                                                                        <select name="district"  style="width: 100%;" readonly>
-                                                                            <option value="<?=$district['id']?>"><?=$district['name']?></option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Ward</div>
-                                                                    <div class="col-md-9">
-                                                                        <select name="ward" style="width: 100%;" readonly>
-                                                                            <option value="<?=$ward['id']?>"><?=$ward['name']?></option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Address:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['address']?>" class="validate[required]" type="text" name="address" readonly/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Nationality:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['nationality']?>" class="validate[required]" type="text" name="nationality" readonly/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Household:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['household']?>" class="validate[required]" type="number" name="household" readonly/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">No of Elder:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['no_elder']?>" class="validate[required]" type="number" name="no_elder" readonly/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">No of Children:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['no_children']?>" class="validate[required]" type="number" name="no_children" readonly/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">No of Dependant:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['no_dependant']?>" class="validate[required]" type="number" name="no_dependant" readonly/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Household Income:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['house_hold_income']?>" class="validate[required]" type="number" name="house_hold_income" readonly/>
+                                                                        <input value="<?=$client['email_address']?>" class="validate[required,custom[email]]" type="email" name="email_address" readonly/>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -932,7 +897,7 @@ if($user->isLoggedIn()) {
                                                         </div>
                                                     </div>
                                                     <div class="modal-footer">
-                                                        <input type="hidden" name="id" value="<?=$citizen['id']?>">
+                                                        <input type="hidden" name="id" value="<?=$client['id']?>">
                                                         <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
                                                     </div>
                                                 </div>
@@ -940,7 +905,7 @@ if($user->isLoggedIn()) {
                                         </div>
                                     </div>
                                     <?php if($user->data()->accessLevel == 1){?>
-                                        <div class="modal fade" id="editCitizen<?=$citizen['id']?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                                        <div class="modal fade" id="editClient<?=$client['id']?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
                                             <div class="modal-dialog">
                                                 <form method="post">
                                                     <div class="modal-content">
@@ -954,70 +919,54 @@ if($user->isLoggedIn()) {
                                                                     <div class="row-form clearfix">
                                                                         <div class="col-md-3">First Name:</div>
                                                                         <div class="col-md-9">
-                                                                            <input value="<?=$citizen['firstname']?>" class="validate[required]" type="text" name="firstname" id="firstname"/>
+                                                                            <input value="<?=$client['firstname']?>" class="validate[required]" type="text" name="firstname" id="firstname" required/>
                                                                         </div>
                                                                     </div>
                                                                     <div class="row-form clearfix">
                                                                         <div class="col-md-3">Last Name:</div>
                                                                         <div class="col-md-9">
-                                                                            <input value="<?=$citizen['lastname']?>" class="validate[required]" type="text" name="lastname" id="lastname"/>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row-form clearfix">
-                                                                        <div class="col-md-3">Tribe:</div>
-                                                                        <div class="col-md-9">
-                                                                            <input value="<?=$citizen['tribe']?>" class="validate[required]" type="text" name="tribe" id="tribe"/>
+                                                                            <input value="<?=$client['lastname']?>" class="validate[required]" type="text" name="lastname" id="lastname" required/>
                                                                         </div>
                                                                     </div>
                                                                     <div class="row-form clearfix">
                                                                         <div class="col-md-3">Gender</div>
                                                                         <div class="col-md-9">
                                                                             <select name="gender" style="width: 100%;" required>
-                                                                                <option value="<?=$citizen['gender']?>"><?=$citizen['gender']?></option>
+                                                                                <option value="<?=$client['gender']?>"><?=$client['gender']?></option>
                                                                                 <option value="Male">Male</option>
                                                                                 <option value="Female">Female</option>
                                                                             </select>
                                                                         </div>
                                                                     </div>
                                                                     <div class="row-form clearfix">
-                                                                        <div class="col-md-3">Education</div>
+                                                                        <div class="col-md-3">Tribe:</div>
                                                                         <div class="col-md-9">
-                                                                            <select name="education" style="width: 100%;" required>
-                                                                                <option value="<?=$citizen['education']?>"><?=$citizen['education']?></option>
-                                                                                <option value="PHD">PHD</option>
-                                                                                <option value="Master Degree">Master Degree</option>
-                                                                                <option value="Bachelor Degree">Bachelor Degree</option>
-                                                                                <option value="Advance Diploma">Advance Diploma</option>
-                                                                                <option value="Diploma">Diploma</option>
-                                                                                <option value="Certificate">Certificate</option>
-                                                                                <option value="A Level">A Level</option>
-                                                                                <option value="O Level">O Level</option>
-                                                                                <option value="Primary Education">Primary Education</option>
-                                                                                <option value="Didnt go to school">Didnt go to school</option>
-                                                                                <option value="Not Applicable">Not Applicable</option>
-                                                                            </select>
+                                                                            <input value="<?=$client['tribe']?>" class="validate[required]" type="text" name="tribe" id="tribe" />
                                                                         </div>
                                                                     </div>
                                                                     <div class="row-form clearfix">
-                                                                        <div class="col-md-3">Marital Status</div>
+                                                                        <div class="col-md-3">Place of Birth:</div>
                                                                         <div class="col-md-9">
-                                                                            <select name="marital_status" style="width: 100%;" required>
-                                                                                <option value="<?=$citizen['marital_status']?>"><?=$citizen['marital_status']?></option>
-                                                                                <option value="Married">Married</option>
-                                                                                <option value="Living together as married">Living together as married</option>
-                                                                                <option value="Not Married">Not Married</option>
-                                                                                <option value="Divorced">Divorced</option>
-                                                                                <option value="Separated">Separated</option>
-                                                                                <option value="Widow">Widow</option>
-                                                                                <option value="Not Applicable">Not Applicable</option>
-                                                                            </select>
+                                                                            <input value="<?=$client['place_of_birth']?>" class="validate[required]" type="text" name="place_of_birth" id="birth_place"/>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="row-form clearfix">
+                                                                        <div class="col-md-3">Nationality:</div>
+                                                                        <div class="col-md-9">
+                                                                            <input value="<?=$client['nationality']?>" class="validate[required]" type="text" name="nationality" required/>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="row-form clearfix">
+                                                                        <div class="col-md-3">Address:</div>
+                                                                        <div class="col-md-9">
+                                                                            <input value="<?=$client['address']?>" class="validate[required]" type="text" name="address" required/>
                                                                         </div>
                                                                     </div>
                                                                     <div class="row-form clearfix">
                                                                         <div class="col-md-3">Occupation</div>
                                                                         <div class="col-md-9">
                                                                             <select name="occupation" style="width: 100%;" required>
-                                                                                <option value="<?=$citizen['occupation']?>"><?=$citizen['occupation']?></option>
+                                                                                <option value="<?=$client['occupation']?>"><?=$client['occupation']?></option>
                                                                                 <option value="Farmer">Farmer</option>
                                                                                 <option value="Fisherman">Fisherman</option>
                                                                                 <option value="Employed">Employed</option>
@@ -1031,76 +980,23 @@ if($user->isLoggedIn()) {
                                                                             </select>
                                                                         </div>
                                                                     </div>
+                                                                    <div class="row-form clearfix">
+                                                                        <div class="col-md-3">Passport Number:</div>
+                                                                        <div class="col-md-9">
+                                                                            <input value="<?=$client['passport_no']?>" class="" type="text" name="passport_no" />
+                                                                        </div>
+                                                                    </div>
 
                                                                     <div class="row-form clearfix">
-                                                                        <div class="col-md-3">Region</div>
+                                                                        <div class="col-md-3">Phone Number:</div>
                                                                         <div class="col-md-9">
-                                                                            <select name="region" id="region" style="width: 100%;" required>
-                                                                                <option value="<?=$region['id']?>"><?=$region['name']?></option>
-                                                                                <?php foreach ($override->getData('region') as $position){?>
-                                                                                    <option value="<?=$position['id']?>"><?=$position['name']?></option>
-                                                                                <?php }?>
-                                                                            </select>
+                                                                            <input value="<?=$client['phone_number']?>" class="validate[required]" type="text" name="phone_number" required/>
                                                                         </div>
                                                                     </div>
                                                                     <div class="row-form clearfix">
-                                                                        <span><img src="img/loaders/loader.gif" id="wait_ds" title="loader.gif"/></span>
-                                                                        <div class="col-md-3">District</div>
+                                                                        <div class="col-md-3">Email Address:</div>
                                                                         <div class="col-md-9">
-                                                                            <select name="district" id="ds_data" style="width: 100%;" required>
-                                                                                <option value="<?=$district['id']?>"><?=$district['name']?></option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row-form clearfix">
-                                                                        <span><img src="img/loaders/loader.gif" id="wait_wd" title="loader.gif"/></span>
-                                                                        <div class="col-md-3">Ward</div>
-                                                                        <div class="col-md-9">
-                                                                            <select name="ward" id="wd_data" style="width: 100%;" required>
-                                                                                <option value="<?=$ward['id']?>"><?=$ward['name']?></option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row-form clearfix">
-                                                                        <div class="col-md-3">Address:</div>
-                                                                        <div class="col-md-9">
-                                                                            <input value="<?=$citizen['address']?>" class="validate[required]" type="text" name="address" />
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row-form clearfix">
-                                                                        <div class="col-md-3">Nationality:</div>
-                                                                        <div class="col-md-9">
-                                                                            <input value="<?=$citizen['nationality']?>" class="validate[required]" type="text" name="nationality" />
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row-form clearfix">
-                                                                        <div class="col-md-3">Household:</div>
-                                                                        <div class="col-md-9">
-                                                                            <input value="<?=$citizen['household']?>" class="validate[required]" type="number" name="household" />
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row-form clearfix">
-                                                                        <div class="col-md-3">No of Elder:</div>
-                                                                        <div class="col-md-9">
-                                                                            <input value="<?=$citizen['no_elder']?>" class="validate[required]" type="number" name="no_elder" />
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row-form clearfix">
-                                                                        <div class="col-md-3">No of Children:</div>
-                                                                        <div class="col-md-9">
-                                                                            <input value="<?=$citizen['no_children']?>" class="validate[required]" type="number" name="no_children" />
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row-form clearfix">
-                                                                        <div class="col-md-3">No of Dependant:</div>
-                                                                        <div class="col-md-9">
-                                                                            <input value="<?=$citizen['no_dependant']?>" class="validate[required]" type="number" name="no_dependant" />
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="row-form clearfix">
-                                                                        <div class="col-md-3">Household Income:</div>
-                                                                        <div class="col-md-9">
-                                                                            <input value="<?=$citizen['house_hold_income']?>" class="validate[required]" type="number" name="house_hold_income" />
+                                                                            <input value="<?=$client['email_address']?>" class="validate[custom[email]]" type="email" name="email_address" />
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -1108,28 +1004,28 @@ if($user->isLoggedIn()) {
                                                             </div>
                                                         </div>
                                                         <div class="modal-footer">
-                                                            <input type="hidden" name="id" value="<?=$citizen['id']?>">
-                                                            <input type="submit" name="edit_citizen" value="Save updates" class="btn btn-warning">
+                                                            <input type="hidden" name="id" value="<?=$client['id']?>">
+                                                            <input type="submit" name="edit_client" value="Save updates" class="btn btn-warning">
                                                             <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
                                                         </div>
                                                     </div>
                                                 </form>
                                             </div>
                                         </div>
-                                        <div class="modal fade" id="deleteCitizen<?=$citizen['id']?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                                        <div class="modal fade" id="deleteClient<?=$client['id']?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
                                             <div class="modal-dialog">
                                                 <form method="post">
                                                     <div class="modal-content">
                                                         <div class="modal-header">
                                                             <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                                                            <h4>Delete This Record</h4>
+                                                            <h4>Delete Client</h4>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <strong style="font-weight: bold;color: red"><p>Are you sure you want to delete this record ?</p></strong>
+                                                            <strong style="font-weight: bold;color: red"><p>Are you sure you want to delete this Client ?</p></strong>
                                                         </div>
                                                         <div class="modal-footer">
-                                                            <input type="hidden" name="id" value="<?=$citizen['id']?>">
-                                                            <input type="submit" name="delete_citizen" value="Delete" class="btn btn-danger">
+                                                            <input type="hidden" name="id" value="<?=$client['id']?>">
+                                                            <input type="submit" name="delete_client" value="Delete" class="btn btn-danger">
                                                             <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
                                                         </div>
                                                     </div>
@@ -1143,41 +1039,98 @@ if($user->isLoggedIn()) {
                         </div>
                     </div>
                 <?php }elseif ($_GET['id'] == 4){?>
-                    <div class="col-md-6">
-<!--                        <form method="post">-->
-<!--                            <input type="submit" name="download_e" value="Download Enumerator Report" class="btn btn-info">-->
-<!--                        </form>-->
+                    <div class="col-md-12">
+                        <form method="post">
+                            <input type="submit" name="download" value="Download Data" class="btn btn-info">
+                        </form>
+                        <?php if($_GET['typ'] == 'a'){
+                            $title='Payment Room Report';
+                            $payments=$override->getData('payment');
+                        }elseif ($_GET['typ'] == 'p'){
+                            $title='Pending Room Payment Report';
+                            $payments=$override->get('payment','status',0);
+                        }?>
                         <div class="head clearfix">
                             <div class="isw-grid"></div>
-                            <h1>Enumerator Report</h1>
-                            <ul class="buttons">
-                                <li><a href="#" class="isw-download"></a></li>
-                                <li><a href="#" class="isw-attachment"></a></li>
-                                <li>
-                                    <a href="#" class="isw-settings"></a>
-                                    <ul class="dd-list">
-                                        <li><a href="#"><span class="isw-plus"></span> New document</a></li>
-                                        <li><a href="#"><span class="isw-edit"></span> Edit</a></li>
-                                        <li><a href="#"><span class="isw-delete"></span> Delete</a></li>
-                                    </ul>
-                                </li>
-                            </ul>
+                            <h1><?=$title?></h1>
                         </div>
                         <div class="block-fluid">
                             <table cellpadding="0" cellspacing="0" width="100%" class="table">
                                 <thead>
                                 <tr>
-                                    <th width="25%">Name</th>
-                                    <th width="25%">Data Collected</th>
+                                    <th><input type="checkbox" name="checkall"/></th>
+                                    <th width="10%">Client</th>
+                                    <th width="10%">Room</th>
+                                    <th width="10%">No Days</th>
+                                    <th width="10%">Amount</th>
+                                    <th width="15%">Paid</th>
+                                    <th width="15%">Remained</th>
+                                    <th width="10%">Status</th>
+                                    <th width="30%">Action</th>
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <?php foreach ($override->get('user','accessLevel',3) as $ward){
-                                    $no=$override->getCount('citizen','user_id',$ward['id']); ?>
+                                <?php foreach ($payments as $payment){
+                                    $client=$override->get('clients','id',$payment['client_id'])[0];
+                                    $room=$override->get('rooms','id',$payment['room_id'])[0];
+                                    ?>
                                     <tr>
-                                        <td> <?=$ward['firstname'].' '.$ward['lastname']?></td>
-                                        <td><?=$no?></td>
+                                        <td><input type="checkbox" name="checkbox"/></td>
+                                        <td> <?=$client['firstname'].' '.$client['lastname']?></td>
+                                        <td><?=$room['name']?></td>
+                                        <td><?=$payment['no_days']?></td>
+                                        <td><?=number_format($payment['amount'])?> Tsh</td>
+                                        <td><?=number_format($payment['payed'])?> Tsh</td>
+                                        <td><?=number_format($payment['amount']-$payment['payed'])?> Tsh</td>
+                                        <td>
+                                            <?php if($payment['status'] == 1){?>
+                                                <button class="btn btn-sm btn-success" type="button">Complete</button>
+                                            <?php }else{?>
+                                                <button class="btn btn-sm btn-warning" type="button">Pending</button>
+                                            <?php }?>
+                                        </td>
+                                        <td>
+                                            <a href="#payment<?=$payment['id']?>" role="button" class="btn btn-info" data-toggle="modal">Update Payment</a>
+                                        </td>
+
                                     </tr>
+                                    <div class="modal fade" id="payment<?=$payment['id']?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <form method="post">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                                                        <h4>Payment Details</h4>
+                                                    </div>
+                                                    <div class="modal-body modal-body-np">
+                                                        <div class="row">
+                                                            <p>&nbsp;&nbsp;<strong style="color: orangered">Note: The remain amount to be paid is <?=number_format($payment['amount']-$payment['payed'])?> Tsh</strong></p>
+                                                            <div class="block-fluid">
+                                                                <div class="row-form clearfix">
+                                                                    <div class="col-md-3">Amount:</div>
+                                                                    <div class="col-md-9">
+                                                                        <input value="" class="validate[required]" type="number" name="amount" id="amount" required/>
+                                                                        <input type="hidden" name="amount_r" value="<?=$payment['amount']?>">
+                                                                        <input type="hidden" name="no_days" value="<?=$payment['no_days']?>">
+                                                                        <input type="hidden" name="room_id" value="<?=$payment['room_id']?>">
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="dr"><span></span></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <input type="hidden" name="id" value="<?=$payment['id']?>">
+                                                        <input type="hidden" name="paid" value="<?=$payment['payed']?>">
+                                                        <input type="hidden" name="client_id" value="<?=$payment['client_id']?>">
+                                                        <input type="hidden" name="amount_p" value="<?=$payment['payed']?>">
+                                                        <input type="submit" name="p_payment" value="Save Update" class="btn btn-info">
+                                                        <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
                                 <?php }?>
                                 </tbody>
                             </table>
@@ -1188,209 +1141,83 @@ if($user->isLoggedIn()) {
                         <form method="post">
                             <input type="submit" name="download" value="Download Data" class="btn btn-info">
                         </form>
+
                         <div class="head clearfix">
                             <div class="isw-grid"></div>
-                            <h1>Data Collection Report</h1>
+                            <h1>List of Drinks</h1>
                         </div>
                         <div class="block-fluid">
                             <table cellpadding="0" cellspacing="0" width="100%" class="table">
                                 <thead>
                                 <tr>
                                     <th><input type="checkbox" name="checkall"/></th>
-                                    <th width="15%">Name</th>
-                                    <th width="10%">Gender</th>
-                                    <th width="15%">Tribe</th>
-                                    <th width="10%">Nationality</th>
-                                    <th width="15%">Education</th>
-                                    <th width="15%">Occupation</th>
+                                    <th width="20%">Brand</th>
+                                    <th width="20%">Category</th>
+                                    <th width="10%">Quantity</th>
+                                    <th width="10%">Price per drink</th>
+                                    <th width="15%">Total Cost</th>
                                     <th width="30%">Action</th>
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <?php foreach ($override->get('citizen','status', 1) as $citizen){
-                                    $region=$override->get('region','id', $citizen['region_id'])[0];
-                                    $district=$override->get('district','id', $citizen['district_id'])[0];
-                                    $ward=$override->get('ward','id', $citizen['ward_id'])[0]?>
+                                <?php foreach ($override->getData('drinks') as $drink){
+                                    $category=$override->get('drink_cat','id',$drink['cat_id'])[0];
+                                    $brand=$override->get('drink_brand','id',$drink['brand_id'])[0];
+                                    ?>
                                     <tr>
                                         <td><input type="checkbox" name="checkbox"/></td>
-                                        <td> <?=$citizen['firstname'].' '.$citizen['lastname']?></td>
-                                        <td><?=$citizen['gender']?></td>
-                                        <td><?=$citizen['tribe']?></td>
-                                        <td><?=$citizen['nationality']?></td>
-                                        <td><?=$citizen['education']?></td>
-                                        <td><?=$citizen['occupation']?></td>
+                                        <td> <?=$brand['name']?></td>
+                                        <td><?=$category['name']?></td>
+                                        <td><?=number_format($drink['quantity'])?></td>
+                                        <td><?=number_format($drink['price_per_item'])?> Tsh</td>
+                                        <td><?=number_format($drink['quantity']*$drink['price_per_item'])?> Tsh</td>
                                         <td>
-                                            <a href="#viewCitizen<?=$citizen['id']?>" role="button" class="btn btn-success" data-toggle="modal">More Details</a>
+                                            <a href="#drinks<?=$drink['id']?>" role="button" class="btn btn-info" data-toggle="modal">Update Info</a>
                                         </td>
 
                                     </tr>
-                                    <div class="modal fade" id="viewCitizen<?=$citizen['id']?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                                    <div class="modal fade" id="drinks<?=$drink['id']?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
                                         <div class="modal-dialog">
                                             <form method="post">
                                                 <div class="modal-content">
                                                     <div class="modal-header">
                                                         <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                                                        <h4>View Citizen Info</h4>
+                                                        <h4>Drinks Details</h4>
                                                     </div>
                                                     <div class="modal-body modal-body-np">
                                                         <div class="row">
-                                                            <div class="block-fluid">
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">First Name:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['firstname']?>" class="validate[required]" type="text" name="firstname" id="firstname" readonly/>
-                                                                    </div>
+                                                            <div class="row-form clearfix">
+                                                                <div class="col-md-3">Drink Category:</div>
+                                                                <div class="col-md-9">
+                                                                    <select name="drink_category" id="s2_1" style="width: 100%;">
+                                                                        <?php $ct=$override->get('drink_cat','id',$drink['cat_id'])[0]?>
+                                                                        <option value="<?=$drink['cat_id']?>"><?=$ct['name']?></option>
+                                                                        <?php foreach ($override->getData('drink_cat') as $category){?>
+                                                                            <option value="<?=$category['id']?>"><?=$category['name']?></option>
+                                                                        <?php }?>
+                                                                    </select>
                                                                 </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Last Name:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['lastname']?>" class="validate[required]" type="text" name="lastname" id="lastname" readonly/>
-                                                                    </div>
+                                                            </div>
+                                                            <div class="row-form clearfix">
+                                                                <span><img src="img/loaders/loader.gif" id="wait_ds" title="loader.gif"/></span>
+                                                                <div class="col-md-3">Drink Brand:</div>
+                                                                <div class="col-md-9">
+                                                                    <select name="drink_brand" id="s2_2" style="width: 100%;">
+                                                                        <?php $br=$override->get('drink_brand','id',$drink['brand_id'])[0]?>
+                                                                        <option value="<?=$drink['cat_id']?>"><?=$br['name']?></option>
+                                                                    </select>
                                                                 </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Tribe:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['tribe']?>" class="validate[required]" type="text" name="tribe" id="tribe" readonly/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Gender</div>
-                                                                    <div class="col-md-9">
-                                                                        <select name="gender" style="width: 100%;" readonly>
-                                                                            <option value="<?=$citizen['gender']?>"><?=$citizen['gender']?></option>
-                                                                            <option value="Male">Male</option>
-                                                                            <option value="Female">Female</option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Education</div>
-                                                                    <div class="col-md-9">
-                                                                        <select name="education" style="width: 100%;" readonly>
-                                                                            <option value="<?=$citizen['education']?>"><?=$citizen['education']?></option>
-                                                                            <option value="PHD">PHD</option>
-                                                                            <option value="Master Degree">Master Degree</option>
-                                                                            <option value="Bachelor Degree">Bachelor Degree</option>
-                                                                            <option value="Advance Diploma">Advance Diploma</option>
-                                                                            <option value="Diploma">Diploma</option>
-                                                                            <option value="Certificate">Certificate</option>
-                                                                            <option value="A Level">A Level</option>
-                                                                            <option value="O Level">O Level</option>
-                                                                            <option value="Primary Education">Primary Education</option>
-                                                                            <option value="Didnt go to school">Didnt go to school</option>
-                                                                            <option value="Not Applicable">Not Applicable</option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Marital Status</div>
-                                                                    <div class="col-md-9">
-                                                                        <select name="marital_status" style="width: 100%;" readonly>
-                                                                            <option value="<?=$citizen['marital_status']?>"><?=$citizen['marital_status']?></option>
-                                                                            <option value="Married">Married</option>
-                                                                            <option value="Living together as married">Living together as married</option>
-                                                                            <option value="Not Married">Not Married</option>
-                                                                            <option value="Divorced">Divorced</option>
-                                                                            <option value="Separated">Separated</option>
-                                                                            <option value="Widow">Widow</option>
-                                                                            <option value="Not Applicable">Not Applicable</option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Occupation</div>
-                                                                    <div class="col-md-9">
-                                                                        <select name="occupation" style="width: 100%;" readonly>
-                                                                            <option value="<?=$citizen['occupation']?>"><?=$citizen['occupation']?></option>
-                                                                            <option value="Farmer">Farmer</option>
-                                                                            <option value="Fisherman">Fisherman</option>
-                                                                            <option value="Employed">Employed</option>
-                                                                            <option value="Businessman">Businessman</option>
-                                                                            <option value="Peasant">Peasant</option>
-                                                                            <option value="Unemployed">Unemployed</option>
-                                                                            <option value="Retired">Retired</option>
-                                                                            <option value="Housewife">Housewife</option>
-                                                                            <option value="Student">Student</option>
-                                                                            <option value="Driver">Driver</option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Region</div>
-                                                                    <div class="col-md-9">
-                                                                        <select name="region"  style="width: 100%;" readonly>
-                                                                            <option value="<?=$region['id']?>"><?=$region['name']?></option>
-                                                                            <?php foreach ($override->getData('region') as $position){?>
-                                                                                <option value="<?=$position['id']?>"><?=$position['name']?></option>
-                                                                            <?php }?>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">District</div>
-                                                                    <div class="col-md-9">
-                                                                        <select name="district"  style="width: 100%;" readonly>
-                                                                            <option value="<?=$district['id']?>"><?=$district['name']?></option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Ward</div>
-                                                                    <div class="col-md-9">
-                                                                        <select name="ward" style="width: 100%;" readonly>
-                                                                            <option value="<?=$ward['id']?>"><?=$ward['name']?></option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Address:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['address']?>" class="validate[required]" type="text" name="address" readonly/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Nationality:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['nationality']?>" class="validate[required]" type="text" name="nationality" readonly/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Household:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['household']?>" class="validate[required]" type="number" name="household" readonly/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">No of Elder:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['no_elder']?>" class="validate[required]" type="number" name="no_elder" readonly/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">No of Children:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['no_children']?>" class="validate[required]" type="number" name="no_children" readonly/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">No of Dependant:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['no_dependant']?>" class="validate[required]" type="number" name="no_dependant" readonly/>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row-form clearfix">
-                                                                    <div class="col-md-3">Household Income:</div>
-                                                                    <div class="col-md-9">
-                                                                        <input value="<?=$citizen['house_hold_income']?>" class="validate[required]" type="number" name="house_hold_income" readonly/>
-                                                                    </div>
-                                                                </div>
+                                                            </div>
+                                                            <div class="row-form clearfix">
+                                                                <div class="col-md-3">Price per Item:</div>
+                                                                <div class="col-md-9"><input value="<?=$drink['price_per_item']?>" class="validate[required]" type="number" name="price_per_item" id="cost"/> <span>Note: Cost of single item</span></div>
                                                             </div>
                                                             <div class="dr"><span></span></div>
                                                         </div>
                                                     </div>
                                                     <div class="modal-footer">
-                                                        <input type="hidden" name="id" value="<?=$citizen['id']?>">
+                                                        <input type="hidden" name="id" value="<?=$drink['id']?>">
+                                                        <input type="submit" name="edit_drinks" value="Save Update" class="btn btn-info">
                                                         <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
                                                     </div>
                                                 </div>
@@ -1403,56 +1230,73 @@ if($user->isLoggedIn()) {
                         </div>
                     </div>
                 <?php }elseif ($_GET['id'] == 6){?>
-                    <div class="col-md-6">
+                    <div class="col-md-12">
+                        <form method="post">
+                            <input type="submit" name="download" value="Download Data" class="btn btn-info">
+                        </form>
+
                         <div class="head clearfix">
                             <div class="isw-grid"></div>
-                            <h1>Summary Report <?php if(!is_null($user->report('men'))){print_r($user->report('men'));}?></h1>
-                            <ul class="buttons">
-                                <li><a href="#" class="isw-download"></a></li>
-                                <li><a href="#" class="isw-attachment"></a></li>
-                                <li>
-                                    <a href="#" class="isw-settings"></a>
-                                    <ul class="dd-list">
-                                        <li><a href="#"><span class="isw-plus"></span> New document</a></li>
-                                        <li><a href="#"><span class="isw-edit"></span> Edit</a></li>
-                                        <li><a href="#"><span class="isw-delete"></span> Delete</a></li>
-                                    </ul>
-                                </li>
-                            </ul>
+                            <h1>Drinks Sales Report</h1>
                         </div>
                         <div class="block-fluid">
                             <table cellpadding="0" cellspacing="0" width="100%" class="table">
                                 <thead>
                                 <tr>
-                                    <th width="25%">Name</th>
-                                    <th width="5%">Percentage</th>
+                                    <th width="20%">Date</th>
+                                    <th width="20%">Amount</th>
+                                    <th width="30%">Manage</th>
                                 </tr>
                                 </thead>
                                 <tbody>
+                                <?php foreach ($override->getData('drink_sales') as $drink){
+                                    $category=$override->get('drink_cat','id',$drink['cat_id'])[0];
+                                    $brand=$override->get('drink_brand','id',$drink['brand_id'])[0];
+                                    ?>
                                     <tr>
-                                        <td> Men</td>
-                                        <td><?=number_format((float)$user->report('men'), 2, '.', '')?>%</td>
+                                        <td> <?=$drink['create_on']?></td>
+                                        <td><?=number_format($drink['amount'])?> Tsh</td>
+                                        <td>
+                                            <a href="#drinks<?=$drink['id']?>" role="button" class="btn btn-info" data-toggle="modal">Details</a>
+                                        </td>
+
                                     </tr>
-                                    <tr>
-                                        <td> Women</td>
-                                        <td><?=number_format((float)$user->report('women'), 2, '.', '')?>%</td>
-                                    </tr>
-                                    <tr>
-                                        <td> Elders</td>
-                                        <td><?=number_format((float)$user->report('elders'), 2, '.', '')?>%</td>
-                                    </tr>
-                                    <tr>
-                                        <td> Children</td>
-                                        <td><?=number_format((float)$user->report('children'), 2, '.', '')?>%</td>
-                                    </tr>
-                                    <tr>
-                                        <td> Dependant</td>
-                                        <td><?=number_format((float)$user->report('dependant'), 2, '.', '')?>%</td>
-                                    </tr>
+                                    <div class="modal fade" id="drinks<?=$drink['id']?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <form method="post">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                                                        <h4>Drinks Sales Details</h4>
+                                                    </div>
+                                                    <div class="modal-body modal-body-np">
+                                                        <div class="row">
+                                                            <?php $ttl=0;foreach ($override->get('drink_sale_item','sale_id',$drink['id']) as $details){
+                                                                $d=$override->get('drinks','id',$details['drinks_id'])[0];
+                                                                $b=$override->get('drink_brand','id',$d['brand_id'])[0];
+                                                                $ttl+=$details['amount'] ?>
+                                                                <div class="col-md-12"><?=$b['name']?> : <?=$details['quantity']?> => <?=number_format($details['amount'])?>Tsh</div>
+                                                                <div class="dr"><span></span></div>
+                                                            <?php }?>
+                                                            <div class="col-md-12"><strong>Total Cost : <?=number_format($ttl)?>Tsh</strong></div>
+                                                            <div class="dr"><span></span></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <input type="hidden" name="id" value="<?=$drink['id']?>">
+                                                        <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                <?php }?>
                                 </tbody>
                             </table>
                         </div>
                     </div>
+                <?php }elseif ($_GET['id'] == 7){?>
+
                 <?php }?>
             </div>
 
@@ -1475,35 +1319,21 @@ if($user->isLoggedIn()) {
     }
     $(document).ready(function(){
         $('#wait_ds').hide();
-        $('#region').change(function(){
+        $('#s2_1').change(function(){
             var getUid = $(this).val();
             $('#wait_ds').show();
             $.ajax({
-                url:"process.php?cnt=region",
+                url:"process.php?cnt=cat",
                 method:"GET",
                 data:{getUid:getUid},
                 success:function(data){
-                    $('#ds_data').html(data);
+                    $('#s2_2').html(data);
                     $('#wait_ds').hide();
                 }
             });
 
         });
-        $('#wait_wd').hide();
-        $('#ds_data').change(function(){
-            $('#wait_wd').hide();
-            var getUid = $(this).val();
-            $.ajax({
-                url:"process.php?cnt=district",
-                method:"GET",
-                data:{getUid:getUid},
-                success:function(data){
-                    $('#wd_data').html(data);
-                    $('#wait_wd').hide();
-                }
-            });
 
-        });
         $('#download').change(function(){
             var getUid = $(this).val();
             $.ajax({

@@ -4,22 +4,25 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 <![endif]-->
 
+<title>Forms stuff - Aquarius - responsive admin panel</title>
+
 <link rel="icon" type="image/ico" href="favicon.ico"/>
 
 <link href="css/stylesheets.css" rel="stylesheet" type="text/css" />
+<!--[if lt IE 8]>
+<link href="css/ie7.css" rel="stylesheet" type="text/css" />
+<![endif]-->
 <link rel='stylesheet' type='text/css' href='css/fullcalendar.print.css' media='print' />
 
 <script type='text/javascript' src='js/plugins/jquery/jquery-1.10.2.min.js'></script>
 <script type='text/javascript' src='js/plugins/jquery/jquery-ui-1.10.1.custom.min.js'></script>
 <script type='text/javascript' src='js/plugins/jquery/jquery-migrate-1.2.1.min.js'></script>
-<script type='text/javascript' src='js/jquery/globalize.js'></script>
 <script type='text/javascript' src='js/plugins/jquery/jquery.mousewheel.min.js'></script>
 
 <script type='text/javascript' src='js/plugins/cookie/jquery.cookies.2.2.0.min.js'></script>
 
 <script type='text/javascript' src='js/plugins/bootstrap.min.js'></script>
 
-<script type='text/javascript' src='js/plugins/charts/excanvas.min.js'></script>
 <script type='text/javascript' src='js/plugins/charts/jquery.flot.js'></script>
 <script type='text/javascript' src='js/plugins/charts/jquery.flot.stack.js'></script>
 <script type='text/javascript' src='js/plugins/charts/jquery.flot.pie.js'></script>
@@ -49,18 +52,13 @@
 
 <script type='text/javascript' src='js/plugins/fancybox/jquery.fancybox.pack.js'></script>
 
+<script type='text/javascript' src='js/plugins/multiselect/jquery.multi-select.js'></script>
+<script type='text/javascript' src='js/plugins/tagsinput/jquery.tagsinput.min.js'></script>
+
 <script type='text/javascript' src='js/plugins/pnotify/jquery.pnotify.min.js'></script>
-<script type='text/javascript' src='js/plugins/ibutton/jquery.ibutton.min.js'></script>
 
 <script type='text/javascript' src='js/plugins/scrollup/jquery.scrollUp.min.js'></script>
 
-<script type='text/javascript' src='js/noty/jquery.noty.js'></script>
-<script type='text/javascript' src='js/noty/layouts/topCenter.js'></script>
-<script type='text/javascript' src='js/noty/layouts/topLeft.js'></script>
-<script type='text/javascript' src='js/noty/layouts/topRight.js'></script>
-<script type='text/javascript' src='js/noty/themes/default.js'></script>
-
-<script type='text/javascript' src='js/plugins.js'></script>
 <script type='text/javascript' src='js/cookies.js'></script>
 <script type='text/javascript' src='js/actions.js'></script>
 <script type='text/javascript' src='js/charts.js'></script>
