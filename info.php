@@ -1511,6 +1511,7 @@ if($user->isLoggedIn()) {
                                 <thead>
                                 <tr>
                                     <th width="20%">Name</th>
+                                    <th width="20%">Date</th>
                                     <th width="20%">Amount</th>
                                 </tr>
                                 </thead>
@@ -1519,12 +1520,14 @@ if($user->isLoggedIn()) {
                                     $billT=$override->get('bills','id',$month['bill_type'])[0];$total+=$month['amount'] ?>
                                     <tr>
                                         <td><?=$billT['name']?></td>
+                                        <td><?=$month['create_on']?></td>
                                         <td> <?=number_format($month['amount'])?>Tsh</td>
                                     </tr>
                                 <?php }?>
                                 </tbody>
                                 <tr>
                                     <td><strong>Total</strong></td>
+                                    <td></td>
                                     <td><strong><?=number_format($total)?>Tsh</strong></td>
                                 </tr>
                             </table>
