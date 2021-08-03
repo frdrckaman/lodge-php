@@ -225,78 +225,87 @@ if($user->isLoggedIn()) {
                 'departure_date' => array(
                     'required' => true,
                 ),
+                'payment_method' => array(
+                    'required' => true,
+                ),
             ));
             if ($validate->passed()) {$amount=0;
-                $price = $override->get('rooms','id',Input::get('room'))[0];
-                $noDays = $user->dateDiff(Input::get('departure_date'),Input::get('arrival_date'));
-                $assignR=$override->get('room_assigned','room_id',Input::get('room'))[0];
-                if($assignR){$rm_st=true;$rm_v=$assignR['status'];}else{$rm_st=false;$rm_v=0;}
-                $amount = $noDays * $price['price'];
-                if(Input::get('payment') <= $amount){
-                    if($rm_v == 0){
-                        try {
-                            if($assignR['room_id'] == Input::get('room')){
-                                $user->updateRecord('room_assigned', array(
-                                    'arrival_date' => Input::get('arrival_date'),
-                                    'departure_date' => Input::get('departure_date'),
-                                    'room_id' => Input::get('room'),
-                                    'client_id' => Input::get('client'),
-                                    'create_on'=>date('Y-m-d'),
-                                    'status' => 1,
-                                    'staff_id'=>$user->data()->id,
-                                ),$assignR['id']);
+                if(Input::get('departure_date') > Input::get('arrival_date')){
+                    $price = $override->get('rooms','id',Input::get('room'))[0];
+                    $noDays = $user->dateDiff(Input::get('departure_date'),Input::get('arrival_date'));
+                    $assignR=$override->get('room_assigned','room_id',Input::get('room'))[0];
+                    if($assignR){$rm_st=true;$rm_v=$assignR['status'];}else{$rm_st=false;$rm_v=0;}
+                    $amount = $noDays * $price['price'];
+                    if(Input::get('payment') <= $amount){
+                        if($rm_v == 0){
+                            try {
+                                if($assignR['room_id'] == Input::get('room')){
+                                    $user->updateRecord('room_assigned', array(
+                                        'arrival_date' => Input::get('arrival_date'),
+                                        'departure_date' => Input::get('departure_date'),
+                                        'room_id' => Input::get('room'),
+                                        'client_id' => Input::get('client'),
+                                        'create_on'=>date('Y-m-d'),
+                                        'status' => 1,
+                                        'staff_id'=>$user->data()->id,
+                                    ),$assignR['id']);
 
-                            }else{
-                                $user->createRecord('room_assigned', array(
+                                }else{
+                                    $user->createRecord('room_assigned', array(
+                                        'arrival_date' => Input::get('arrival_date'),
+                                        'departure_date' => Input::get('departure_date'),
+                                        'room_id' => Input::get('room'),
+                                        'client_id' => Input::get('client'),
+                                        'create_on'=>date('Y-m-d'),
+                                        'status' => 1,
+                                        'staff_id'=>$user->data()->id,
+                                    ));
+                                }
+                                $user->createRecord('room_assigned_rec', array(
                                     'arrival_date' => Input::get('arrival_date'),
                                     'departure_date' => Input::get('departure_date'),
                                     'room_id' => Input::get('room'),
                                     'client_id' => Input::get('client'),
                                     'create_on'=>date('Y-m-d'),
-                                    'status' => 1,
                                     'staff_id'=>$user->data()->id,
                                 ));
-                            }
-                            $user->createRecord('room_assigned_rec', array(
-                                'arrival_date' => Input::get('arrival_date'),
-                                'departure_date' => Input::get('departure_date'),
-                                'room_id' => Input::get('room'),
-                                'client_id' => Input::get('client'),
-                                'create_on'=>date('Y-m-d'),
-                                'staff_id'=>$user->data()->id,
-                            ));
-                            if($amount == Input::get('payment')){$status=1;}else{$status=0;}
-                            $user->createRecord('payment', array(
-                                'amount' => $amount,
-                                'payed' => Input::get('payment'),
-                                'room_id' => Input::get('room'),
-                                'no_days' => $noDays,
-                                'client_id' => Input::get('client'),
-                                'create_on'=>date('Y-m-d'),
-                                'status' => $status,
-                                'staff_id'=>$user->data()->id,
-                            ));
-                            if(Input::get('payment') > 0){
-                                $user->createRecord('payment_rec', array(
-                                    'amount' => Input::get('payment'),
+                                if($amount == Input::get('payment')){$status=1;}else{$status=0;}
+                                $user->createRecord('payment', array(
+                                    'amount' => $amount,
+                                    'payment_method' => Input::get('payment_method'),
+                                    'payed' => Input::get('payment'),
+                                    'room_id' => Input::get('room'),
                                     'no_days' => $noDays,
-                                    'room_id' => Input::get('room'),
                                     'client_id' => Input::get('client'),
                                     'create_on'=>date('Y-m-d'),
+                                    'status' => $status,
                                     'staff_id'=>$user->data()->id,
                                 ));
-                            }
-                            $user->updateRecord('rooms',array('status'=>1),Input::get('room'));
-                            $successMessage = 'Room assigned to the Client Successful';
+                                if(Input::get('payment') > 0){
+                                    $user->createRecord('payment_rec', array(
+                                        'amount' => Input::get('payment'),
+                                        'payment_method' => Input::get('payment_method'),
+                                        'no_days' => $noDays,
+                                        'room_id' => Input::get('room'),
+                                        'client_id' => Input::get('client'),
+                                        'create_on'=>date('Y-m-d'),
+                                        'staff_id'=>$user->data()->id,
+                                    ));
+                                }
+                                $user->updateRecord('rooms',array('status'=>1),Input::get('room'));
+                                $successMessage = 'Room assigned to the Client Successful';
 
-                        } catch (Exception $e) {
-                            die($e->getMessage());
+                            } catch (Exception $e) {
+                                die($e->getMessage());
+                            }
+                        }else{
+                            $errorMessage='Room is occupied, if not so please update room status to unoccupied then try again';
                         }
                     }else{
-                        $errorMessage='Room is occupied, if not so please update room status to unoccupied then try again';
+                        $errorMessage='Paid Amount exceeded the required amount';
                     }
                 }else{
-                    $errorMessage='Paid Amount exceeded the required amount';
+                    $errorMessage='Departure Date must be greater than arrival date';
                 }
             } else {
                 $pageError = $validate->errors();
@@ -411,6 +420,109 @@ if($user->isLoggedIn()) {
                 } else {
                     $pageError = $validate->errors();
                 }
+            }
+        }
+        elseif (Input::get('add_salary')){
+            $validate = new validate();
+            $validate = $validate->check($_POST, array(
+                'staff' => array(
+                    'required' => true,
+                ),
+                'month' => array(
+                    'required' => true,
+                ),
+                'amount' => array(
+                    'required' => true,
+                ),
+            ));
+            if ($validate->passed()) {
+                try {
+                    $user->createRecord('salary', array(
+                        'amount' => Input::get('amount'),
+                        'staff_id' => Input::get('staff'),
+                        'month' => Input::get('month'),
+                        'year' => date('Y'),
+                        'create_on'=>date('Y-m-d'),
+                        'admin_id'=>$user->data()->id,
+                    ));
+                    $successMessage = 'Salary Paid Successful';
+
+                } catch (Exception $e) {
+                    die($e->getMessage());
+                }
+            } else {
+                $pageError = $validate->errors();
+            }
+        }
+        elseif (Input::get('add_bill')){
+            $validate = new validate();
+            $validate = $validate->check($_POST, array(
+                'name' => array(
+                    'required' => true,
+                ),
+            ));
+            if ($validate->passed()) {
+                try {
+                    $user->createRecord('bills', array(
+                        'name' => Input::get('name'),
+                    ));
+                    $successMessage = 'Bill paid Successful';
+
+                } catch (Exception $e) {
+                    die($e->getMessage());
+                }
+            } else {
+                $pageError = $validate->errors();
+            }
+        }
+        elseif (Input::get('pay_bill')){
+            $validate = new validate();
+            $validate = $validate->check($_POST, array(
+                'bill' => array(
+                    'required' => true,
+                ),
+                'amount' => array(
+                    'required' => true,
+                ),
+            ));
+            if ($validate->passed()) {
+                try {
+                    $user->createRecord('bill_payment', array(
+                        'amount' => Input::get('amount'),
+                        'bill_type' => Input::get('bill'),
+                        'month' => date('m'),
+                        'year' => date('Y'),
+                        'create_on' => date('Y-m-d'),
+                        'staff_id' => $user->data()->id,
+                    ));
+                    $successMessage = 'Bill paid Successful';
+
+                } catch (Exception $e) {
+                    die($e->getMessage());
+                }
+            } else {
+                $pageError = $validate->errors();
+            }
+        }
+        elseif (Input::get('add_pay_method')){
+            $validate = new validate();
+            $validate = $validate->check($_POST, array(
+                'name' => array(
+                    'required' => true,
+                ),
+            ));
+            if ($validate->passed()) {
+                try {
+                    $user->createRecord('payment_method', array(
+                        'name' => Input::get('name'),
+                    ));
+                    $successMessage = 'Payment method added Successful';
+
+                } catch (Exception $e) {
+                    die($e->getMessage());
+                }
+            } else {
+                $pageError = $validate->errors();
             }
         }
     }
@@ -773,6 +885,18 @@ if($user->isLoggedIn()) {
                                 </div>
 
                                 <div class="row-form clearfix">
+                                    <div class="col-md-3">Payment Method:</div>
+                                    <div class="col-md-9">
+                                        <select name="payment_method" id="" style="width: 100%;" required>
+                                            <option value="">Choose payment method...</option>
+                                            <?php foreach ($override->getData('payment_method') as $method){?>
+                                                <option value="<?=$method['id']?>"><?=$method['name']?></option>
+                                            <?php }?>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row-form clearfix">
                                     <div class="col-md-3">Payment:</div>
                                     <div class="col-md-9">
                                         <input value="0" class="" type="number" name="payment" id="payment"/>
@@ -897,6 +1021,138 @@ if($user->isLoggedIn()) {
                                         <input type="submit" name="sell_drink" value="Submit" class="btn btn-default">
                                     </div>
                                  <?php }?>
+                            </form>
+                        </div>
+
+                    </div>
+                <?php }elseif ($_GET['id'] == 10){?>
+                <div class="col-md-offset-1 col-md-8">
+                    <div class="head clearfix">
+                        <div class="isw-ok"></div>
+                        <h1>Pay Salary</h1>
+                    </div>
+                    <div class="block-fluid">
+                        <form id="validation" method="post" >
+
+                            <div class="row-form clearfix">
+                                <div class="col-md-3">Staff :</div>
+                                <div class="col-md-9">
+                                    <select name="staff" id="s2_1" style="width: 100%;">
+                                        <option value="">Choose staff...</option>
+                                        <?php foreach ($override->getData('user') as $staff){?>
+                                            <option value="<?=$staff['id']?>"><?=$staff['firstname'].' '.$staff['lastname']?></option>
+                                        <?php }?>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row-form clearfix">
+                                <div class="col-md-3">Month:</div>
+                                <div class="col-md-9">
+                                    <select name="month" id="" style="width: 100%;">
+                                        <option value="">choose month...</option>
+                                        <option value="1">January</option>
+                                        <option value="2">February</option>
+                                        <option value="3">March</option>
+                                        <option value="4">April</option>
+                                        <option value="5">May</option>
+                                        <option value="6">June</option>
+                                        <option value="7">July</option>
+                                        <option value="8">August</option>
+                                        <option value="9">September</option>
+                                        <option value="10">October</option>
+                                        <option value="11">November</option>
+                                        <option value="12">December</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row-form clearfix">
+                                <div class="col-md-3">Amount:</div>
+                                <div class="col-md-9"><input value="" class="validate[required]" type="number" name="amount" id="quantity"/></div>
+                            </div>
+
+                            <div class="footer tar">
+                                <input type="submit" name="add_salary" value="Submit" class="btn btn-default">
+                            </div>
+
+                        </form>
+                    </div>
+
+                </div>
+                <?php }elseif ($_GET['id'] == 11){?>
+                    <div class="col-md-offset-1 col-md-8">
+                        <div class="head clearfix">
+                            <div class="isw-ok"></div>
+                            <h1>Add Bill</h1>
+                        </div>
+                        <div class="block-fluid">
+                            <form id="validation" method="post" >
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Name:</div>
+                                    <div class="col-md-9">
+                                        <input value="" class="validate[required]" type="text" name="name" id="name"/>
+                                    </div>
+                                </div>
+
+                                <div class="footer tar">
+                                    <input type="submit" name="add_bill" value="Submit" class="btn btn-default">
+                                </div>
+
+                            </form>
+                        </div>
+
+                    </div>
+                <?php }elseif ($_GET['id'] == 12){?>
+                    <div class="col-md-offset-1 col-md-8">
+                        <div class="head clearfix">
+                            <div class="isw-ok"></div>
+                            <h1>Pay Bill</h1>
+                        </div>
+                        <div class="block-fluid">
+                            <form id="validation" method="post" >
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Bill:</div>
+                                    <div class="col-md-9">
+                                        <select name="bill" id="s2_1" style="width: 100%;">
+                                            <option value="">choose a bill...</option>
+                                            <?php foreach ($override->getData('bills') as $bills){?>
+                                                <option value="<?=$bills['id']?>"><?=$bills['name']?></option>
+                                            <?php }?>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Amount:</div>
+                                    <div class="col-md-9">
+                                        <input value="" class="validate[required]" type="number" name="amount" id="amount"/>
+                                    </div>
+                                </div>
+
+                                <div class="footer tar">
+                                    <input type="submit" name="pay_bill" value="Submit" class="btn btn-default">
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                <?php }elseif ($_GET['id'] == 13){?>
+                    <div class="col-md-offset-1 col-md-8">
+                        <div class="head clearfix">
+                            <div class="isw-ok"></div>
+                            <h1>Add Payment Method</h1>
+                        </div>
+                        <div class="block-fluid">
+                            <form id="validation" method="post" >
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Name:</div>
+                                    <div class="col-md-9">
+                                        <input value="" class="validate[required]" type="text" name="name" id="name"/>
+                                    </div>
+                                </div>
+
+                                <div class="footer tar">
+                                    <input type="submit" name="add_pay_method" value="Submit" class="btn btn-default">
+                                </div>
+
                             </form>
                         </div>
 

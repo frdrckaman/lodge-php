@@ -42,6 +42,16 @@ class OverideData{
         $num = $query->rowCount();
         return $num;
     }
+    public function getSortNoRepeatAll($table,$param){
+        $query = $this->_pdo->query("SELECT DISTINCT $param FROM $table ORDER BY '$param' DESC ");
+        $result = $query->fetchAll(PDO::FETCH_ASSOC);
+        return $result;
+    }
+    public function getSortNoRepeatAll1($table,$param,$field,$value){
+        $query = $this->_pdo->query("SELECT DISTINCT $param FROM $table WHERE $field = '$value' ORDER BY '$param' DESC ");
+        $result = $query->fetchAll(PDO::FETCH_ASSOC);
+        return $result;
+    }
     public function getRepeatAll($table,$param,$id){
         $query = $this->_pdo->query("SELECT DISTINCT $param FROM $table ORDER BY '$id' ASC ");
         $result = $query->fetchAll(PDO::FETCH_ASSOC);
@@ -238,13 +248,18 @@ class OverideData{
         $num = $query->rowCount();
         return $num;
     }
-    public function getSum($table,$field,$field1,$value1,$field2,$value2,$field3,$value3){
-        $query = $this->_pdo->query("SELECT SUM($field) FROM $table WHERE $field1 = '$value1' AND $field2 >= '$value2' AND $field3 <= '$value3'");
+    public function getSum1($table,$field,$field1,$value1){
+        $query = $this->_pdo->query("SELECT SUM($field) FROM $table WHERE $field1 = '$value1'");
         $result = $query->fetchAll(PDO::FETCH_ASSOC);
         return $result;
     }
-    public function getSum2($table,$field,$field1,$value1,$field2,$value2,$field3,$value3,$field4,$value4){
-        $query = $this->_pdo->query("SELECT SUM($field) FROM $table WHERE $field1 = '$value1' AND $field2 = '$value2' AND $field3 >= '$value3' AND $field4 <= '$value4'");
+    public function getSum2($table,$field,$field1,$value1,$field2,$value2){
+        $query = $this->_pdo->query("SELECT SUM($field) FROM $table WHERE $field1 = '$value1' AND $field2 = '$value2'");
+        $result = $query->fetchAll(PDO::FETCH_ASSOC);
+        return $result;
+    }
+    public function getSum($table,$field,$field1,$value1,$field2,$value2,$field3,$value3){
+        $query = $this->_pdo->query("SELECT SUM($field) FROM $table WHERE $field1 = '$value1' AND $field2 >= '$value2' AND $field3 <= '$value3'");
         $result = $query->fetchAll(PDO::FETCH_ASSOC);
         return $result;
     }

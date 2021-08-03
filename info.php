@@ -215,6 +215,9 @@ if($user->isLoggedIn()) {
                 'amount' => array(
                     'required' => true,
                 ),
+                'payment_method' => array(
+                    'required' => true,
+                ),
             ));
             if ($validate->passed()) {
                 $r_amount=Input::get('amount_p')+Input::get('amount');
@@ -223,10 +226,12 @@ if($user->isLoggedIn()) {
                     try {
                         $user->updateRecord('payment', array(
                             'payed' => $r_amount,
+                            'payment_method' => Input::get('payment_method'),
                             'status' => $st,
                         ),Input::get('id'));
                         $user->createRecord('payment_rec', array(
                             'amount' => Input::get('amount'),
+                            'payment_method' => Input::get('payment_method'),
                             'no_days' => Input::get('no_days'),
                             'room_id' => Input::get('room_id'),
                             'client_id' => Input::get('client_id'),
@@ -272,8 +277,25 @@ if($user->isLoggedIn()) {
                 $pageError = $validate->errors();
             }
         }
-        elseif (Input::get('download')){
+        elseif (Input::get('edit_payment_method')){
+            $validate = $validate->check($_POST, array(
+                'name' => array(
+                    'required' => true,
+                ),
+            ));
+            if ($validate->passed()) {
+                try {
+                    $user->updateRecord('payment_method', array(
+                        'name' => Input::get('name'),
+                    ),Input::get('id'));
+                    $successMessage = 'Payment Method Successful Updated';
 
+                } catch (Exception $e) {
+                    die($e->getMessage());
+                }
+            } else {
+                $pageError = $validate->errors();
+            }
         }
         elseif (Input::get('download_e')){
 
@@ -673,7 +695,7 @@ if($user->isLoggedIn()) {
                     <div class="col-md-6">
                         <div class="head clearfix">
                             <div class="isw-grid"></div>
-                            <h1>List of Drinks Brands</h1>
+                            <h1>Payment Methods</h1>
                             <ul class="buttons">
                                 <li><a href="#" class="isw-download"></a></li>
                                 <li><a href="#" class="isw-attachment"></a></li>
@@ -692,15 +714,13 @@ if($user->isLoggedIn()) {
                                 <thead>
                                 <tr>
                                     <th width="25%">Name</th>
-                                    <th width="25%">Category</th>
                                     <th width="5%">Action</th>
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <?php foreach ($override->getData('drink_brand') as $brand){?>
+                                <?php foreach ($override->getData('payment_method') as $brand){?>
                                     <tr>
                                         <td><?=$brand['name']?></td>
-                                        <td><?=$override->get('drink_cat','id', $brand['cat_id'])[0]['name']?></td>
                                         <td><a href="#brand<?=$brand['id']?>" role="button" class="btn btn-info" data-toggle="modal">Edit</a></td>
                                         <!-- EOF Bootrstrap modal form -->
                                     </tr>
@@ -710,7 +730,7 @@ if($user->isLoggedIn()) {
                                                 <div class="modal-content">
                                                     <div class="modal-header">
                                                         <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                                                        <h4> Edit Drinks Brands </h4>
+                                                        <h4> Edit Payment Methods </h4>
                                                     </div>
                                                     <div class="modal-body modal-body-np">
                                                         <div class="row">
@@ -721,23 +741,12 @@ if($user->isLoggedIn()) {
                                                                 </div>
                                                             </div>
 
-                                                            <div class="row-form clearfix">
-                                                                <div class="col-md-3">Drink Category</div>
-                                                                <div class="col-md-9">
-                                                                    <select name="drink_category" id="region" style="width: 100%;" required>
-                                                                        <option value="<?=$brand['cat_id']?>"><?=$override->get('drink_cat','id',$brand['cat_id'])[0]['name']?></option>
-                                                                        <?php foreach ($override->getData('drink_cat') as $cat){?>
-                                                                            <option value="<?=$cat['id']?>"><?=$cat['name']?></option>
-                                                                        <?php }?>
-                                                                    </select>
-                                                                </div>
-                                                            </div>
                                                             <div class="dr"><span></span></div>
                                                         </div>
                                                     </div>
                                                     <div class="modal-footer">
                                                         <input type="hidden" name="id" value="<?=$brand['id']?>">
-                                                        <input type="submit" name="edit_drink_brand" class="btn btn-warning"  aria-hidden="true" value="Save updates">
+                                                        <input type="submit" name="edit_payment_method" class="btn btn-warning"  aria-hidden="true" value="Save updates">
                                                         <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
                                                     </div>
                                                 </div>
@@ -1107,6 +1116,17 @@ if($user->isLoggedIn()) {
                                                             <p>&nbsp;&nbsp;<strong style="color: orangered">Note: The remain amount to be paid is <?=number_format($payment['amount']-$payment['payed'])?> Tsh</strong></p>
                                                             <div class="block-fluid">
                                                                 <div class="row-form clearfix">
+                                                                    <div class="col-md-3">Payment Method:</div>
+                                                                    <div class="col-md-9">
+                                                                        <select name="payment_method" id="" style="width: 100%;" required>
+                                                                            <option value="">Choose payment method...</option>
+                                                                            <?php foreach ($override->getData('payment_method') as $method){?>
+                                                                                <option value="<?=$method['id']?>"><?=$method['name']?></option>
+                                                                            <?php }?>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="row-form clearfix">
                                                                     <div class="col-md-3">Amount:</div>
                                                                     <div class="col-md-9">
                                                                         <input value="" class="validate[required]" type="number" name="amount" id="amount" required/>
@@ -1296,7 +1316,300 @@ if($user->isLoggedIn()) {
                         </div>
                     </div>
                 <?php }elseif ($_GET['id'] == 7){?>
+                    <div class="col-md-12">
+                        <form method="post">
+                            <input type="submit" name="download" value="Download Data" class="btn btn-info">
+                        </form>
 
+                        <div class="head clearfix">
+                            <div class="isw-grid"></div>
+                            <h1>Salary Payment</h1>
+                        </div>
+                        <div class="block-fluid">
+                            <table cellpadding="0" cellspacing="0" width="100%" class="table">
+                                <thead>
+                                <tr>
+                                    <th width="20%">Year</th>
+                                    <th width="20%">Amount</th>
+                                    <th width="30%">Details</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($override->getSortNoRepeatAll('salary', 'year') as $year){
+                                    $yrSum=$override->getSum1('salary','amount','year',$year['year']);
+                                    ?>
+                                    <tr>
+                                        <td> <?=$year['year']?></td>
+                                        <td> <?=number_format($yrSum[0]['SUM(amount)'])?>Tsh</td>
+                                        <td>
+                                            <a href="info.php?id=8&yr=<?=$year['year']?>" role="button" class="btn btn-info" data-toggle="modal">Details</a>
+                                        </td>
+
+                                    </tr>
+                                <?php }?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                <?php }elseif ($_GET['id'] == 8){if($_GET['yr']){?>
+                    <div class="col-md-12">
+                        <form method="post">
+                            <input type="submit" name="download" value="Download Data" class="btn btn-info">
+                        </form>
+
+                        <div class="head clearfix">
+                            <div class="isw-grid"></div>
+                            <h1>Salary Payment <?=$_GET['yr']?></h1>
+                        </div>
+                        <div class="block-fluid">
+                            <table cellpadding="0" cellspacing="0" width="100%" class="table">
+                                <thead>
+                                <tr>
+                                    <th width="20%">Month</th>
+                                    <th width="20%">Amount</th>
+                                    <th width="30%">Details</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($override->getSortNoRepeatAll1('salary', 'month','year',$_GET['yr']) as $year){
+                                    $yrSum=$override->getSum2('salary','amount','year',$_GET['yr'], 'month', $year['month']);
+                                    ?>
+                                    <tr>
+                                        <td> <?=$user->monthName($year['month'])?></td>
+                                        <td> <?=number_format($yrSum[0]['SUM(amount)'])?>Tsh</td>
+                                        <td>
+                                            <a href="info.php?id=9&yr=<?=$_GET['yr']?>&m=<?=$year['month']?>" role="button" class="btn btn-info" data-toggle="modal">Details</a>
+                                        </td>
+
+                                    </tr>
+                                <?php }?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                <?php }}elseif ($_GET['id'] == 9){?>
+                    <div class="col-md-12">
+                        <form method="post">
+                            <input type="submit" name="download" value="Download Data" class="btn btn-info">
+                        </form>
+
+                        <div class="head clearfix">
+                            <div class="isw-grid"></div>
+                            <h1>Salary Payment <?=$_GET['yr'].' '.$user->monthName($_GET['m'])?></h1>
+                        </div>
+                        <div class="block-fluid">
+                            <table cellpadding="0" cellspacing="0" width="100%" class="table">
+                                <thead>
+                                <tr>
+                                    <th width="20%">Name</th>
+                                    <th width="20%">Position</th>
+                                    <th width="20%">Amount</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php $total=0;foreach ($override->getNews('salary', 'month',$_GET['m'],'year',$_GET['yr']) as $month){
+                                    $staff=$override->get('user','id',$month['staff_id'])[0];$total+=$month['amount'] ?>
+                                    <tr>
+                                        <td><?=$staff['firstname'].' '.$staff['lastname']?></td>
+                                        <td><?=$override->get('position','id',$staff['position'])[0]['name']?></td>
+                                        <td> <?=number_format($month['amount'])?>Tsh</td>
+                                    </tr>
+                                <?php }?>
+                                </tbody>
+                                <tr>
+                                    <td><strong>Total</strong></td>
+                                    <td><strong></strong></td>
+                                    <td><strong><?=number_format($total)?>Tsh</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                <?php }elseif ($_GET['id'] == 10){?>
+                    <div class="col-md-12">
+                        <form method="post">
+                            <input type="submit" name="download" value="Download Data" class="btn btn-info">
+                        </form>
+
+                        <div class="head clearfix">
+                            <div class="isw-grid"></div>
+                            <h1>Bills Payment</h1>
+                        </div>
+                        <div class="block-fluid">
+                            <table cellpadding="0" cellspacing="0" width="100%" class="table">
+                                <thead>
+                                <tr>
+                                    <th width="20%">Year</th>
+                                    <th width="20%">Amount</th>
+                                    <th width="30%">Details</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($override->getSortNoRepeatAll('bill_payment', 'year') as $year){
+                                    $yrSum=$override->getSum1('bill_payment','amount','year',$year['year']);
+                                    ?>
+                                    <tr>
+                                        <td> <?=$year['year']?></td>
+                                        <td> <?=number_format($yrSum[0]['SUM(amount)'])?>Tsh</td>
+                                        <td>
+                                            <a href="info.php?id=11&yr=<?=$year['year']?>" role="button" class="btn btn-info" data-toggle="modal">Details</a>
+                                        </td>
+
+                                    </tr>
+                                <?php }?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                <?php }elseif ($_GET['id'] == 11){if($_GET['yr']){?>
+                    <div class="col-md-12">
+                    <form method="post">
+                        <input type="submit" name="download" value="Download Data" class="btn btn-info">
+                    </form>
+
+                    <div class="head clearfix">
+                        <div class="isw-grid"></div>
+                        <h1>Bill Payment <?=$_GET['yr']?></h1>
+                    </div>
+                    <div class="block-fluid">
+                        <table cellpadding="0" cellspacing="0" width="100%" class="table">
+                            <thead>
+                            <tr>
+                                <th width="20%">Month</th>
+                                <th width="20%">Amount</th>
+                                <th width="30%">Details</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($override->getSortNoRepeatAll1('bill_payment', 'month','year',$_GET['yr']) as $year){
+                                $yrSum=$override->getSum2('bill_payment','amount','year',$_GET['yr'], 'month', $year['month']);
+                                ?>
+                                <tr>
+                                    <td> <?=$user->monthName($year['month'])?></td>
+                                    <td> <?=number_format($yrSum[0]['SUM(amount)'])?>Tsh</td>
+                                    <td>
+                                        <a href="info.php?id=12&yr=<?=$_GET['yr']?>&m=<?=$year['month']?>" role="button" class="btn btn-info" data-toggle="modal">Details</a>
+                                    </td>
+
+                                </tr>
+                            <?php }?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <?php }}elseif ($_GET['id'] == 12){?>
+                    <div class="col-md-12">
+                        <form method="post">
+                            <input type="submit" name="download" value="Download Data" class="btn btn-info">
+                        </form>
+
+                        <div class="head clearfix">
+                            <div class="isw-grid"></div>
+                            <h1>Bill Payment <?=$_GET['yr'].' '.$user->monthName($_GET['m'])?></h1>
+                        </div>
+                        <div class="block-fluid">
+                            <table cellpadding="0" cellspacing="0" width="100%" class="table">
+                                <thead>
+                                <tr>
+                                    <th width="20%">Name</th>
+                                    <th width="20%">Amount</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php $total=0;foreach ($override->getNews('bill_payment', 'month',$_GET['m'],'year',$_GET['yr']) as $month){
+                                    $billT=$override->get('bills','id',$month['bill_type'])[0];$total+=$month['amount'] ?>
+                                    <tr>
+                                        <td><?=$billT['name']?></td>
+                                        <td> <?=number_format($month['amount'])?>Tsh</td>
+                                    </tr>
+                                <?php }?>
+                                </tbody>
+                                <tr>
+                                    <td><strong>Total</strong></td>
+                                    <td><strong><?=number_format($total)?>Tsh</strong></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                <?php }elseif ($_GET['id'] == 13){?>
+                    <div class="col-md-12">
+                        <div class="head clearfix">
+                            <div class="isw-grid"></div>
+                            <h1>List of Drinks Brands</h1>
+                            <ul class="buttons">
+                                <li><a href="#" class="isw-download"></a></li>
+                                <li><a href="#" class="isw-attachment"></a></li>
+                                <li>
+                                    <a href="#" class="isw-settings"></a>
+                                    <ul class="dd-list">
+                                        <li><a href="#"><span class="isw-plus"></span> New document</a></li>
+                                        <li><a href="#"><span class="isw-edit"></span> Edit</a></li>
+                                        <li><a href="#"><span class="isw-delete"></span> Delete</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="block-fluid">
+                            <table cellpadding="0" cellspacing="0" width="100%" class="table">
+                                <thead>
+                                <tr>
+                                    <th width="25%">Name</th>
+                                    <th width="25%">Category</th>
+                                    <th width="5%">Action</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($override->getData('drink_brand') as $brand){?>
+                                    <tr>
+                                        <td><?=$brand['name']?></td>
+                                        <td><?=$override->get('drink_cat','id', $brand['cat_id'])[0]['name']?></td>
+                                        <td><a href="#brand<?=$brand['id']?>" role="button" class="btn btn-info" data-toggle="modal">Edit</a></td>
+                                        <!-- EOF Bootrstrap modal form -->
+                                    </tr>
+                                    <div class="modal fade" id="brand<?=$brand['id']?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <form method="post">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                                                        <h4> Edit Drinks Brands </h4>
+                                                    </div>
+                                                    <div class="modal-body modal-body-np">
+                                                        <div class="row">
+                                                            <div class="block-fluid">
+                                                                <div class="row-form clearfix">
+                                                                    <div class="col-md-3">Name:</div>
+                                                                    <div class="col-md-9"><input type="text" name="name" value="<?=$brand['name']?>" /></div>
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="row-form clearfix">
+                                                                <div class="col-md-3">Drink Category</div>
+                                                                <div class="col-md-9">
+                                                                    <select name="drink_category" id="region" style="width: 100%;" required>
+                                                                        <option value="<?=$brand['cat_id']?>"><?=$override->get('drink_cat','id',$brand['cat_id'])[0]['name']?></option>
+                                                                        <?php foreach ($override->getData('drink_cat') as $cat){?>
+                                                                            <option value="<?=$cat['id']?>"><?=$cat['name']?></option>
+                                                                        <?php }?>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                            <div class="dr"><span></span></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <input type="hidden" name="id" value="<?=$brand['id']?>">
+                                                        <input type="submit" name="edit_drink_brand" class="btn btn-warning"  aria-hidden="true" value="Save updates">
+                                                        <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                <?php }?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 <?php }?>
             </div>
 

@@ -116,6 +116,21 @@ if($user->data()->accessLevel == 1){
                         </a>
                     </li>
                     <li class="">
+                        <a href="add.php?id=11">
+                            <span class="glyphicon glyphicon-plus"></span><span class="text">Add Bill Type</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="add.php?id=13">
+                            <span class="glyphicon glyphicon-plus"></span><span class="text">Add Payment Method</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="info.php?id=13">
+                            <span class="glyphicon glyphicon-list"></span><span class="text">Drink Brands</span>
+                        </a>
+                    </li>
+                    <li class="">
                         <a href="info.php?id=2">
                             <span class="glyphicon glyphicon-list"></span><span class="text">View</span>
                         </a>
@@ -150,6 +165,21 @@ if($user->data()->accessLevel == 1){
 
                 </ul>
             </li>
+            <li class="openable">
+                <a href="#"><span class="isw-calendar"></span><span class="text">Bills</span></a>
+                <ul>
+                    <li>
+                        <a href="add.php?id=12">
+                            <span class="glyphicon glyphicon-user"></span><span class="text">Pay bill</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="info.php?id=10">
+                            <span class="glyphicon glyphicon-registration-mark"></span><span class="text">Bill Report</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
 
         <li class="openable">
             <a href="#"><span class="isw-documents"></span><span class="text">Reports</span></a>
@@ -167,6 +197,22 @@ if($user->data()->accessLevel == 1){
                 </li>
             </ul>
         </li>
+            <li class="openable">
+                <a href="#"><span class="isw-text_document"></span><span class="text">Salary</span></a>
+                <ul>
+                    <li>
+                        <a href="add.php?id=10" data-toggle="modal">
+                            <span class="glyphicon glyphicon-plus"></span><span class="text">Add Payment</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="info.php?id=7">
+                            <span class="glyphicon glyphicon-share"></span><span class="text">Salary Report</span>
+                        </a>
+                    </li>
+                </ul>
+            </li>
             <li class="openable">
                 <a href="#"><span class="isw-tag"></span><span class="text">Extra</span></a>
 

@@ -11,7 +11,12 @@ if($user->isLoggedIn()) {
     if(Input::exists('post')){
         if(Input::get('edit_room_status')){
             if(Input::get('status')==1){$st=0;}else{$st=1;}
-            $user->updateRecord('room_assigned',array('status'=>$st),Input::get('id'));
+            try {
+                $user->updateRecord('room_assigned', array('status' => $st), Input::get('id'));
+                $user->updateRecord('rooms',array('status'=>$st),Input::get('room_id'));
+            } catch (Exception $e) {
+                $e->getMessage();
+            }
             $successMessage='Room Status changed successful';
         }
     }
@@ -212,6 +217,7 @@ if($user->isLoggedIn()) {
                                                 </div>
                                                 <div class="modal-footer">
                                                     <input type="hidden" name="id" value="<?=$status['id']?>">
+                                                    <input type="hidden" name="room_id" value="<?=$room['id']?>">
                                                     <input type="submit" name="edit_room_status" class="btn btn-warning"  aria-hidden="true" value="Save updates">
                                                     <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
                                                 </div>
