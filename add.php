@@ -279,6 +279,8 @@ if($user->isLoggedIn()) {
                                     'client_id' => Input::get('client'),
                                     'create_on'=>date('Y-m-d'),
                                     'status' => $status,
+                                    'drinks_pay'=> 0,
+                                    'food_pay'=> 0,
                                     'staff_id'=>$user->data()->id,
                                 ));
                                 if(Input::get('payment') > 0){
@@ -378,20 +380,36 @@ if($user->isLoggedIn()) {
         }
         elseif (Input::get('sell_drink')) {
             if(Input::get('complete_sell')){
+                $req=false;
+                if(Input::get('room_bill')){$req=true;}
                 $validate = $validate->check($_POST, array(
                     'amount' => array(
-                        'required' => true,
+                        'required' => $req,
                     ),
                 ));
                 if ($validate->passed()) {
-                    if(Input::get('amount') == Input::get('total_cost')){
+                    if(Input::get('amount') == Input::get('total_cost') || Input::get('room_bill')){
+                        $checkB=false;
+                        if(Token::check(Input::get('room_bill'))){
+                            $assignedRoom=$override->get('room_assigned','room_id', Input::get('room'))[0];
+                            $clientRM=$override->get('clients','id',$assignedRoom['client_id']);
+                            $tCost=Input::get('total_cost');$status=0;$roomID=Input::get('room');
+                            $clID=$assignedRoom['client_id'];
+                            $rmPy=$override->getNews('payment','client_id',$assignedRoom['client_id'],'room_id',Input::get('room'))[0];
+                            $newAmount=$rmPy['amount']+$tCost;$checkB=true;
+                        }else{$assignedRoom=0;$clientRM=0;$tCost=Input::get('amount');$status=1;$roomID=0;$clID=0;}
                         try {
                             $user->createRecord('drink_sales', array(
-                                'amount' => Input::get('amount'),
+                                'amount' => $tCost,
                                 'create_on' => date('Y-m-d'),
+                                'client_id' => $clID,
                                 'staff_id' => $user->data()->id,
+                                'status' => $status,
                             ));
                             $sale_id=$override->lastRow('drink_sales','id')[0];
+                            if($checkB){
+                                $user->updateRecord('payment',array('amount'=>$newAmount,'drinks_pay'=>$sale_id['id']),$rmPy['id']);
+                            }
                             $si=0;
                             foreach (Input::get('s_id') as $sid){
                                 $q=Input::get('qt')[$si];
@@ -523,6 +541,86 @@ if($user->isLoggedIn()) {
                 }
             } else {
                 $pageError = $validate->errors();
+            }
+        }
+        elseif (Input::get('add_food')){
+            $validate = $validate->check($_POST, array(
+                'name' => array(
+                    'required' => true,
+                ),
+                'price' => array(
+                    'required' => true,
+                ),
+            ));
+            if ($validate->passed()) {
+                try {
+                    $user->createRecord('food', array(
+                        'name' => Input::get('name'),
+                        'price' => Input::get('price'),
+                    ));
+                    $successMessage = 'Food Menu Added Successful';
+                } catch (Exception $e) {
+                    die($e->getMessage());
+                }
+            } else {
+                $pageError = $validate->errors();
+            }
+        }
+        elseif (Input::get('sell_food')) {
+            if(Input::get('complete_sell')){
+                $req=false;
+                if(Input::get('room_bill')){$req=true;}
+                $validate = $validate->check($_POST, array(
+                    'amount' => array(
+                        'required' => $req,
+                    ),
+                ));
+                if ($validate->passed()) {
+                    if(Input::get('amount') == Input::get('total_cost') || Input::get('room_bill')){
+                        $checkB=false;
+                        if(Token::check(Input::get('room_bill'))){
+                            $assignedRoom=$override->get('room_assigned','room_id', Input::get('room'))[0];
+                            $clientRM=$override->get('clients','id',$assignedRoom['client_id']);
+                            $tCost=Input::get('total_cost');$status=0;$roomID=Input::get('room');
+                            $clID=$assignedRoom['client_id'];
+                            $rmPy=$override->getNews('payment','client_id',$assignedRoom['client_id'],'room_id',Input::get('room'))[0];
+                            $newAmount=$rmPy['amount']+$tCost;$checkB=true;
+                        }else{$assignedRoom=0;$clientRM=0;$tCost=Input::get('amount');$status=1;$roomID=0;$clID=0;}
+                        try {
+                            $user->createRecord('food_sales', array(
+                                'amount' => $tCost,
+                                'create_on' => date('Y-m-d'),
+                                'client_id' => $clID,
+                                'staff_id' => $user->data()->id,
+                                'status' => $status,
+                            ));
+                            $sale_id=$override->lastRow('food_sales','id')[0];
+                            if($checkB){
+                                $user->updateRecord('payment',array('amount'=>$newAmount,'food_pay'=>$sale_id['id']),$rmPy['id']);
+                            }
+                            $si=0;
+                            foreach (Input::get('s_id') as $sid){
+                                $q=Input::get('qt')[$si];
+                                $user->createRecord('food_sale_item', array(
+                                    'amount' => Input::get('prc')[$si],
+                                    'quantity' => $q,
+                                    'food_id' => $sid,
+                                    'sale_id' => $sale_id['id'],
+                                    'create_on' => date('Y-m-d'),
+                                    'staff_id' => $user->data()->id,
+                                ));
+                                $si++;
+                            }
+                            $successMessage = 'Food Sold Successful';
+                        } catch (Exception $e) {
+                            die($e->getMessage());
+                        }
+                    }else{
+                        $errorMessage='Amount entered is either insufficient  or exceeded the required amount, Please enter the correct amount';
+                    }
+                } else {
+                    $pageError = $validate->errors();
+                }
             }
         }
     }
@@ -1012,8 +1110,16 @@ if($user->isLoggedIn()) {
                                     <div class="col-md-12"><strong> Total Cost : <?=number_format($total)?> Tsh</strong></div>
                                     <div class="dr"><span></span></div>
                                     <div class="row-form clearfix">
-                                        <div class="col-md-3">Amount:</div>
-                                        <div class="col-md-9"><input value="" class="validate[required]" type="number" name="amount" id="amount" required/></div>
+                                        <div class="col-md-2">Amount:</div>
+                                        <div class="col-md-4"><input value="0"  type="number" name="amount" id="amount" /></div>
+                                        <div class="col-md-4">
+                                            <label class="checkbox checkbox-inline">
+                                                <input type="checkbox" id="rm_py" name="room_bill" value="<?=Token::generate();?>"/> Add bill to the Room
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div id="rm_dt">
+                                        <span><img src="img/loaders/loader.gif" id="wait_ds1" title="loader.gif"/></span>
                                     </div>
                                     <div class="footer tar">
                                         <input type="hidden" name="complete_sell" value="1">
@@ -1157,6 +1263,106 @@ if($user->isLoggedIn()) {
                         </div>
 
                     </div>
+                <?php }elseif ($_GET['id'] == 14){?>
+                    <div class="col-md-offset-1 col-md-8">
+                        <div class="head clearfix">
+                            <div class="isw-ok"></div>
+                            <h1>Add Food Menu</h1>
+                        </div>
+                        <div class="block-fluid">
+                            <form id="validation" method="post" >
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Name:</div>
+                                    <div class="col-md-9">
+                                        <input value="" class="validate[required]" type="text" name="name" id="name"/>
+                                    </div>
+                                </div>
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3"> Price:</div>
+                                    <div class="col-md-9">
+                                        <input value="" class="validate[required]" type="number" name="price" id="price"/>
+                                    </div>
+                                </div>
+
+                                <div class="footer tar">
+                                    <input type="submit" name="add_food" value="Submit" class="btn btn-default">
+                                </div>
+
+                            </form>
+                        </div>
+
+                    </div>
+                <?php }elseif ($_GET['id'] == 15){?>
+                    <div class="col-md-offset-1 col-md-8">
+                        <div class="head clearfix">
+                            <div class="isw-ok"></div>
+                            <h1>Sell Food</h1>
+                        </div>
+                        <div class="block-fluid">
+                            <h5>&nbsp;</h5>
+                            <form id="validation" method="post" >
+                                <?php if(!Input::get('food') && !Input::get('food_1')){?>
+                                    <div class="row-form clearfix">
+                                        <div class="col-md-3">Select Food:</div>
+                                        <div class="col-md-9">
+                                            <select name="food[]" id="s2_2" style="width: 100%;" multiple="multiple" required>
+                                                <option value="">Choose Food...</option>
+                                                <?php foreach ($override->getData('food') as $food){?>
+                                                    <option value="<?=$food['id']?>"><?=$food['name']?></option>
+                                                <?php }?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="footer tar">
+                                        <input type="submit" name="sell_food" value="Submit" class="btn btn-default">
+                                    </div>
+                                <?php }?>
+                                <?php if (Input::get('food')){$f=0;
+                                    foreach (Input::get('food') as $drk){
+                                        $dnk=$override->get('food','id',$drk)[0]; ?>
+                                        <div class="row-form clearfix">
+                                            <div class="col-md-2"><strong><?=$dnk['name']?> : </strong></div>
+                                            <input type="hidden" name="food_1[<?=$f?>]" value="<?=$drk?>">
+                                            <div class="col-md-3"><input value="" class="validate[required]" type="number" name="quantity[]" id="quantity"/> </div>
+                                        </div>
+                                        <?php $f++;}?>
+                                    <div class="footer tar">
+                                        <input type="submit" name="food_drink" value="Submit" class="btn btn-default">
+                                    </div>
+                                <?php }if(Input::get('quantity')){$x=0;$total=0;
+                                    foreach (Input::get('quantity') as $qty){
+                                        $dnk=$override->get('food','id',Input::get('food_1')[$x])[0];
+                                        $total += $dnk['price']*$qty?>
+                                        <div class="col-md-12"><?=$dnk['name']?> : <?=$qty?> => <?=number_format($dnk['price']*$qty)?> Tsh</div>
+                                        <input type="hidden" name="prc[<?=$x?>]" value="<?=$dnk['price']*$qty?>">
+                                        <input type="hidden" name="s_id[<?=$x?>]" value="<?=$dnk['id']?>">
+                                        <input type="hidden" name="qt[<?=$x?>]" value="<?=$qty?>">
+                                        <div class="dr"><span></span></div>
+                                        <?php $x++;}?>
+                                    <div class="col-md-12"><strong> Total Cost : <?=number_format($total)?> Tsh</strong></div>
+                                    <div class="dr"><span></span></div>
+                                    <div class="row-form clearfix">
+                                        <div class="col-md-2">Amount:</div>
+                                        <div class="col-md-4"><input value="0"  type="number" name="amount" id="amount" /></div>
+                                        <div class="col-md-4">
+                                            <label class="checkbox checkbox-inline">
+                                                <input type="checkbox" id="rm_py" name="room_bill" value="<?=Token::generate();?>"/> Add bill to the Room
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div id="rm_dt">
+                                        <span><img src="img/loaders/loader.gif" id="wait_ds1" title="loader.gif"/></span>
+                                    </div>
+                                    <div class="footer tar">
+                                        <input type="hidden" name="complete_sell" value="1">
+                                        <input type="hidden" name="total_cost" value="<?=$total?>">
+                                        <input type="submit" name="sell_food" value="Submit" class="btn btn-default">
+                                    </div>
+                                <?php }?>
+                            </form>
+                        </div>
+
+                    </div>
                 <?php }?>
                 <div class="dr"><span></span></div>
             </div>
@@ -1188,6 +1394,36 @@ if($user->isLoggedIn()) {
                 success:function(data){
                     $('#s2_2').html(data);
                     $('#wait_ds').hide();
+                }
+            });
+
+        });
+        $('#wait_ds1').hide();
+        $('#wait_ds2').hide();
+        $('#rm_py').change(function(){
+            var getUid = $(this).val();
+            $('#wait_ds1').show();
+            $.ajax({
+                url:"process.php?cnt=room",
+                method:"GET",
+                data:{getUid:getUid},
+                success:function(data){
+                    $('#rm_dt').html(data);
+                    $('#wait_ds1').hide();
+                }
+            });
+
+        });
+        $('#r_id').change(function(){
+            var getUid = $(this).val();
+            $('#wait_ds2').show();
+            $.ajax({
+                url:"process.php?cnt=client",
+                method:"GET",
+                data:{getUid:getUid},
+                success:function(data){
+                    $('#cl_id').html(data);
+                    $('#wait_ds2').hide();
                 }
             });
 

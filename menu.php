@@ -166,6 +166,32 @@ if($user->data()->accessLevel == 1){
                 </ul>
             </li>
             <li class="openable">
+                <a href="#"><span class="isw-picture"></span><span class="text">Food</span></a>
+                <ul>
+                    <li class="">
+                        <a href="add.php?id=14">
+                            <span class="glyphicon glyphicon-plus"></span><span class="text">Add Food Menu</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="add.php?id=15">
+                            <span class="glyphicon glyphicon-plus"></span><span class="text">Sell Food</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="info.php?id=15">
+                            <span class="glyphicon glyphicon-list"></span><span class="text">Food Sales Report</span>
+                        </a>
+                    </li>
+                    <li class="">
+                        <a href="info.php?id=14">
+                            <span class="glyphicon glyphicon-list"></span><span class="text">Manage Food Menu</span>
+                        </a>
+                    </li>
+
+                </ul>
+            </li>
+            <li class="openable">
                 <a href="#"><span class="isw-calendar"></span><span class="text">Bills</span></a>
                 <ul>
                     <li>

@@ -238,6 +238,20 @@ if($user->isLoggedIn()) {
                             'create_on'=>date('Y-m-d'),
                             'staff_id'=>$user->data()->id,
                         ));
+                        if($st == 1){
+                            $roomP=$override->get('rooms','id',Input::get('room_id'))[0];
+                            $rp=$roomP['price']*Input::get('no_days');
+                            $user->updateRecord('payment', array(
+                                'amount' => $rp,
+                                'payed' => $rp,
+                            ),Input::get('id'));
+                            foreach ($override->getNews('drink_sales','client_id',Input::get('client_id'),'status',0) as $dSale){
+                                $user->updateRecord('drink_sales',array('status'=>1),Input::get('d_sale'));
+                            }
+                            foreach ($override->getNews('food_sales','client_id',Input::get('client_id'),'status',0) as $dSale){
+                                $user->updateRecord('food_sales',array('status'=>1),Input::get('f_sale'));
+                            }
+                        }
                         $successMessage = 'Payment Successful Updated';
 
                     } catch (Exception $e) {
@@ -297,8 +311,29 @@ if($user->isLoggedIn()) {
                 $pageError = $validate->errors();
             }
         }
-        elseif (Input::get('download_e')){
+        elseif (Input::get('edit_food')){
+            $validate = $validate->check($_POST, array(
+                'name' => array(
+                    'required' => true,
+                ),
+                'price' => array(
+                    'required' => true,
+                ),
+            ));
+            if ($validate->passed()) {
+                try {
+                    $user->updateRecord('food', array(
+                        'name' => Input::get('name'),
+                        'price' => Input::get('price'),
+                    ),Input::get('id'));
+                    $successMessage = 'Food Menu Successful Updated';
 
+                } catch (Exception $e) {
+                    die($e->getMessage());
+                }
+            } else {
+                $pageError = $validate->errors();
+            }
         }
     }
 }else{
@@ -1081,8 +1116,7 @@ if($user->isLoggedIn()) {
                                 <tbody>
                                 <?php foreach ($payments as $payment){
                                     $client=$override->get('clients','id',$payment['client_id'])[0];
-                                    $room=$override->get('rooms','id',$payment['room_id'])[0];
-                                    ?>
+                                    $room=$override->get('rooms','id',$payment['room_id'])[0]; ?>
                                     <tr>
                                         <td><input type="checkbox" name="checkbox"/></td>
                                         <td> <?=$client['firstname'].' '.$client['lastname']?></td>
@@ -1090,7 +1124,7 @@ if($user->isLoggedIn()) {
                                         <td><?=$payment['no_days']?></td>
                                         <td><?=number_format($payment['amount'])?> Tsh</td>
                                         <td><?=number_format($payment['payed'])?> Tsh</td>
-                                        <td><?=number_format($payment['amount']-$payment['payed'])?> Tsh</td>
+                                        <td><?=number_format(($payment['amount'])-$payment['payed'])?> Tsh</td>
                                         <td>
                                             <?php if($payment['status'] == 1){?>
                                                 <button class="btn btn-sm btn-success" type="button">Complete</button>
@@ -1113,7 +1147,7 @@ if($user->isLoggedIn()) {
                                                     </div>
                                                     <div class="modal-body modal-body-np">
                                                         <div class="row">
-                                                            <p>&nbsp;&nbsp;<strong style="color: orangered">Note: The remain amount to be paid is <?=number_format($payment['amount']-$payment['payed'])?> Tsh</strong></p>
+                                                            <p>&nbsp;&nbsp;<strong style="color: orangered">Note: The remain amount to be paid is <?=number_format(($payment['amount'])-$payment['payed'])?> Tsh</strong></p>
                                                             <div class="block-fluid">
                                                                 <div class="row-form clearfix">
                                                                     <div class="col-md-3">Payment Method:</div>
@@ -1144,6 +1178,8 @@ if($user->isLoggedIn()) {
                                                         <input type="hidden" name="paid" value="<?=$payment['payed']?>">
                                                         <input type="hidden" name="client_id" value="<?=$payment['client_id']?>">
                                                         <input type="hidden" name="amount_p" value="<?=$payment['payed']?>">
+                                                        <input type="hidden" name="d_sale" value="<?=$payment['drinks_pay']?>">
+                                                        <input type="hidden" name="f_sale" value="<?=$payment['food_pay']?>">
                                                         <input type="submit" name="p_payment" value="Save Update" class="btn btn-info">
                                                         <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
                                                     </div>
@@ -1602,6 +1638,133 @@ if($user->isLoggedIn()) {
                                                     <div class="modal-footer">
                                                         <input type="hidden" name="id" value="<?=$brand['id']?>">
                                                         <input type="submit" name="edit_drink_brand" class="btn btn-warning"  aria-hidden="true" value="Save updates">
+                                                        <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                <?php }?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                <?php }elseif ($_GET['id'] == 14){?>
+                    <div class="col-md-12">
+                        <form method="post">
+                            <input type="submit" name="download" value="Download Data" class="btn btn-info">
+                        </form>
+
+                        <div class="head clearfix">
+                            <div class="isw-grid"></div>
+                            <h1>Manage Food Menu</h1>
+                        </div>
+                        <div class="block-fluid">
+                            <table cellpadding="0" cellspacing="0" width="100%" class="table">
+                                <thead>
+                                <tr>
+                                    <th width="20%">Name</th>
+                                    <th width="20%">Price</th>
+                                    <th width="30%">Action</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($override->getData('food') as $food){?>
+                                    <tr>
+                                        <td> <?=$food['name']?></td>
+                                        <td><?=number_format($food['price'])?> Tsh</td>
+                                        <td>
+                                            <a href="#drinks<?=$food['id']?>" role="button" class="btn btn-info" data-toggle="modal">Update Info</a>
+                                        </td>
+
+                                    </tr>
+                                    <div class="modal fade" id="drinks<?=$food['id']?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <form method="post">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                                                        <h4>Food Menu Details</h4>
+                                                    </div>
+                                                    <div class="modal-body modal-body-np">
+                                                        <div class="row">
+                                                            <div class="row-form clearfix">
+                                                                <div class="col-md-3">Name:</div>
+                                                                <div class="col-md-9"><input value="<?=$food['name']?>" class="validate[required]" type="text" name="name" id="name"/></div>
+                                                            </div>
+
+                                                            <div class="row-form clearfix">
+                                                                <div class="col-md-3">Price:</div>
+                                                                <div class="col-md-9"><input value="<?=$food['price']?>" class="validate[required]" type="number" name="price" id="cost"/></div>
+                                                            </div>
+                                                            <div class="dr"><span></span></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <input type="hidden" name="id" value="<?=$food['id']?>">
+                                                        <input type="submit" name="edit_food" value="Save Update" class="btn btn-info">
+                                                        <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                <?php }?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                <?php }elseif ($_GET['id'] == 15){?>
+                    <div class="col-md-12">
+                        <form method="post">
+                            <input type="submit" name="download" value="Download Data" class="btn btn-info">
+                        </form>
+
+                        <div class="head clearfix">
+                            <div class="isw-grid"></div>
+                            <h1>Food Sales Report</h1>
+                        </div>
+                        <div class="block-fluid">
+                            <table cellpadding="0" cellspacing="0" width="100%" class="table">
+                                <thead>
+                                <tr>
+                                    <th width="20%">Date</th>
+                                    <th width="20%">Amount</th>
+                                    <th width="30%">Manage</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <?php foreach ($override->getData('food_sales') as $food){?>
+                                    <tr>
+                                        <td> <?=$food['create_on']?></td>
+                                        <td><?=number_format($food['amount'])?> Tsh</td>
+                                        <td>
+                                            <a href="#food<?=$food['id']?>" role="button" class="btn btn-info" data-toggle="modal">Details</a>
+                                        </td>
+
+                                    </tr>
+                                    <div class="modal fade" id="food<?=$food['id']?>" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <form method="post">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                                                        <h4>Food Sales Details</h4>
+                                                    </div>
+                                                    <div class="modal-body modal-body-np">
+                                                        <div class="row">
+                                                            <?php $ttl=0;foreach ($override->get('food_sale_item','sale_id',$food['id']) as $details){
+                                                                $d=$override->get('food','id',$details['food_id'])[0];
+                                                                $ttl+=$details['amount'] ?>
+                                                                <div class="col-md-12"><?=$d['name']?> : <?=$details['quantity']?> => <?=number_format($details['amount'])?>Tsh</div>
+                                                                <div class="dr"><span></span></div>
+                                                            <?php }?>
+                                                            <div class="col-md-12"><strong>Total Cost : <?=number_format($ttl)?>Tsh</strong></div>
+                                                            <div class="dr"><span></span></div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <input type="hidden" name="id" value="<?=$food['id']?>">
                                                         <button class="btn btn-default" data-dismiss="modal" aria-hidden="true">Close</button>
                                                     </div>
                                                 </div>
