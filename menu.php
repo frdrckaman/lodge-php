@@ -211,16 +211,11 @@ if($user->data()->accessLevel == 1){
             <a href="#"><span class="isw-documents"></span><span class="text">Reports</span></a>
             <ul>
                 <li>
-                    <a href="#" data-toggle="modal">
+                    <a href="report.php" role="button">
                         <span class="glyphicon glyphicon-search"></span><span class="text">Search Report</span>
                     </a>
                 </li>
 
-                <li>
-                    <a href="#">
-                        <span class="glyphicon glyphicon-share"></span><span class="text">Daily Report</span>
-                    </a>
-                </li>
             </ul>
         </li>
             <li class="openable">
