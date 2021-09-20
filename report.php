@@ -100,7 +100,7 @@ if($user->isLoggedIn()) {
                 </div>
                 <?php if($_GET['id'] == 1 && $user->data()->accessLevel == 1){?>
                     <div class="row">
-                        <?php $income=0;$pending=0;$expenses=0;$expect=0;$start=$_GET['start'];$end=$_GET['end']?>
+                        <?php $income=0;$pending=0;$expenses=0;$expect=0;$discount=0;$start=$_GET['start'];$end=$_GET['end']?>
                         <div class="col-md-6">
                             <div class="block-fluid without-head">
                                 <div class="toolbar nopadding-toolbar clearfix">
@@ -114,28 +114,31 @@ if($user->isLoggedIn()) {
                                         <th width="80">No Days</th>
                                         <th width="60">Room</th>
                                         <th width="80">Paid</th>
+                                        <th width="80">Discount</th>
                                         <th width="80">Total cost</th>
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    <?php $x=1;$ttl=0;$pyd=0;foreach ($override->dateRange('payment','create_on',$start,$end) as $report){
+                                    <?php $x=1;$ttl=0;$pyd=0;$dsc=0;foreach ($override->dateRange('payment','create_on',$start,$end) as $report){
                                         $client=$override->get('clients','id',$report['client_id'])[0];$room=$override->get('rooms','id',$report['room_id'])[0];
-                                        $pyd+=$report['payed'];$ttl+=$report['amount'];?>
+                                        $pyd+=$report['payed'];$ttl+=$report['amount'];$dsc+=$report['discount']?>
                                         <tr>
                                             <td><?=$x?></td>
                                             <td class="info"><a class="fancybox" rel="group" href="#"><?=$client['firstname'].' '.$client['lastname']?></a>  <span><?=$report['create_on']?></span></td>
                                             <td><a class="fancybox" rel="group" href="#"><?=$report['no_days']?></a></td>
                                             <td><?=$room['name']?></td>
-                                            <td><a href="#"><?=number_format($report['payed'])?></a></td>
+                                            <td><a href="#"><?=number_format($report['payed']-$report['discount'])?></a></td>
+                                            <td><a href="#"><?=number_format($report['discount'])?></a></td>
                                             <td><a href="#"><?=number_format($report['amount'])?></a></td>
                                         </tr>
-                                    <?php $x++;}$income+=$pyd;$expect+=$ttl;$pending=$expect-$pyd?>
+                                    <?php $x++;}$income+=$pyd;$expect+=$ttl;$pending=$expect-$pyd;$discount+=$dsc?>
                                         <tr>
                                             <td></td>
                                             <td class="info"><a class="fancybox" rel="group" href="#"><strong>Total</strong></a></span></td>
                                             <td><a class="fancybox" rel="group" href="#"></a></td>
                                             <td></td>
-                                            <td><a href="#"><strong><?=number_format($pyd)?></strong></a></td>
+                                            <td><a href="#"><strong><?=number_format($pyd-$dsc)?></strong></a></td>
+                                            <td><a href="#"><strong><?=number_format($dsc)?></strong></a></td>
                                             <td><a href="#"><strong><?=number_format($ttl)?></strong></a></td>
                                         </tr>
                                     </tbody>
@@ -266,6 +269,7 @@ if($user->isLoggedIn()) {
                                     <thead>
                                     <tr>
                                         <th>Income</th>
+                                        <th>Discount</th>
                                         <th>Expected Amount</th>
                                         <th>Pending Amount</th>
                                         <th>Expenses</th>
@@ -273,8 +277,9 @@ if($user->isLoggedIn()) {
                                     </thead>
                                     <tbody>
                                     <tr>
-                                        <td class="info"><a class="fancybox" rel="group" href="#"><strong><?=number_format($income)?></strong></a>  </span></td>
-                                        <td class="info"><a class="fancybox" rel="group" href="#"><strong><?=number_format($expect)?></strong></a> </span></td>
+                                        <td class="info"><a class="fancybox" rel="group" href="#"><strong><?=number_format($income-$discount)?></strong></a>  </span></td>
+                                        <td class="info"><a class="fancybox" rel="group" href="#"><strong><?=number_format($discount)?></strong></a>  </span></td>
+                                        <td class="info"><a class="fancybox" rel="group" href="#"><strong><?=number_format($income)?></strong></a> </span></td>
                                         <td class="info"><a class="fancybox" rel="group" href="#"><strong><?=number_format($pending)?></strong></a> </span></td>
                                         <td class="info"><a class="fancybox" rel="group" href="#"><strong><?=number_format($expenses)?></strong></a> </span></td>
                                     </tr>

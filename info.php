@@ -220,7 +220,9 @@ if($user->isLoggedIn()) {
                 ),
             ));
             if ($validate->passed()) {
+//                $dicAmount=(Input::get('amount')-Input::get('discount'));
                 $r_amount=Input::get('amount_p')+Input::get('amount');
+//                $r_amount=Input::get('amount_p')+$dicAmount;
                 if($r_amount <= Input::get('amount_r')){
                     if($r_amount == Input::get('amount_r')){$st=1;}else{$st=0;}
                     try {
@@ -1104,11 +1106,12 @@ if($user->isLoggedIn()) {
                                 <tr>
                                     <th><input type="checkbox" name="checkall"/></th>
                                     <th width="10%">Client</th>
-                                    <th width="10%">Room</th>
+                                    <th width="5%">Room</th>
                                     <th width="10%">No Days</th>
-                                    <th width="10%">Amount</th>
+                                    <th width="20%">Amount</th>
+                                    <th width="15%">Discount</th>
                                     <th width="15%">Paid</th>
-                                    <th width="15%">Remained</th>
+                                    <th width="10%">Remained</th>
                                     <th width="10%">Status</th>
                                     <th width="30%">Action</th>
                                 </tr>
@@ -1122,9 +1125,10 @@ if($user->isLoggedIn()) {
                                         <td> <?=$client['firstname'].' '.$client['lastname']?></td>
                                         <td><?=$room['name']?></td>
                                         <td><?=$payment['no_days']?></td>
-                                        <td><?=number_format($payment['amount'])?> Tsh</td>
-                                        <td><?=number_format($payment['payed'])?> Tsh</td>
-                                        <td><?=number_format(($payment['amount'])-$payment['payed'])?> Tsh</td>
+                                        <td><?='Original: '.number_format($payment['amount']).' Discounted: '.number_format(($payment['amount']-$payment['discount']))?> Tsh</td>
+                                        <td><?=number_format($payment['discount'])?> Tsh</td>
+                                        <td><?php if(($payment['payed']-$payment['discount'])>0){echo number_format($payment['payed']-$payment['discount']);}else{number_format($payment['payed']);}?> Tsh</td>
+                                        <td><?php if((($payment['amount']-$payment['discount'])-$payment['payed'])>0){echo number_format(($payment['amount']-$payment['discount'])-$payment['payed']);}else{echo 0;}?> Tsh</td>
                                         <td>
                                             <?php if($payment['status'] == 1){?>
                                                 <button class="btn btn-sm btn-success" type="button">Complete</button>
@@ -1147,7 +1151,7 @@ if($user->isLoggedIn()) {
                                                     </div>
                                                     <div class="modal-body modal-body-np">
                                                         <div class="row">
-                                                            <p>&nbsp;&nbsp;<strong style="color: orangered">Note: The remain amount to be paid is <?=number_format(($payment['amount'])-$payment['payed'])?> Tsh</strong></p>
+                                                            <p>&nbsp;&nbsp;<strong style="color: orangered">Note: The remain amount to be paid is <?=number_format(($payment['amount']-$payment['discount'])-$payment['payed'])?> Tsh</strong></p>
                                                             <div class="block-fluid">
                                                                 <div class="row-form clearfix">
                                                                     <div class="col-md-3">Payment Method:</div>
@@ -1164,9 +1168,10 @@ if($user->isLoggedIn()) {
                                                                     <div class="col-md-3">Amount:</div>
                                                                     <div class="col-md-9">
                                                                         <input value="" class="validate[required]" type="number" name="amount" id="amount" required/>
-                                                                        <input type="hidden" name="amount_r" value="<?=$payment['amount']?>">
+                                                                        <input type="hidden" name="amount_r" value="<?=($payment['amount']-$payment['discount'])?>">
                                                                         <input type="hidden" name="no_days" value="<?=$payment['no_days']?>">
                                                                         <input type="hidden" name="room_id" value="<?=$payment['room_id']?>">
+                                                                        <input type="hidden" name="discount" value="<?=$payment['discount']?>">
                                                                     </div>
                                                                 </div>
                                                             </div>

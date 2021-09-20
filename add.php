@@ -274,6 +274,7 @@ if($user->isLoggedIn()) {
                                     'amount' => $amount,
                                     'payment_method' => Input::get('payment_method'),
                                     'payed' => Input::get('payment'),
+                                    'discount' => Input::get('discount'),
                                     'room_id' => Input::get('room'),
                                     'no_days' => $noDays,
                                     'client_id' => Input::get('client'),
@@ -286,6 +287,7 @@ if($user->isLoggedIn()) {
                                 if(Input::get('payment') > 0){
                                     $user->createRecord('payment_rec', array(
                                         'amount' => Input::get('payment'),
+                                        'discount' => Input::get('discount'),
                                         'payment_method' => Input::get('payment_method'),
                                         'no_days' => $noDays,
                                         'room_id' => Input::get('room'),
@@ -998,6 +1000,13 @@ if($user->isLoggedIn()) {
                                     <div class="col-md-3">Payment:</div>
                                     <div class="col-md-9">
                                         <input value="0" class="" type="number" name="payment" id="payment"/>
+                                    </div>
+                                </div>
+
+                                <div class="row-form clearfix">
+                                    <div class="col-md-3">Discount:</div>
+                                    <div class="col-md-9">
+                                        <input value="0" class="" type="number" name="discount" id="discount"/>
                                     </div>
                                 </div>
 
